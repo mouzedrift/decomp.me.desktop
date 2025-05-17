@@ -1,0 +1,144 @@
+[gd_scene load_steps=5 format=3 uid="uid://d14c2fslmupww"]
+
+[ext_resource type="Script" uid="uid://b7fbjpg5263yr" path="res://Scripts/ScratchPage.cs" id="1_pdha3"]
+[ext_resource type="Texture2D" uid="uid://dqjbtm21n2njc" path="res://icon.svg" id="1_xc6vo"]
+[ext_resource type="PackedScene" uid="uid://bpudcsy1w1nsi" path="res://Scenes/CppCodeEdit.tscn" id="2_40dmx"]
+[ext_resource type="PackedScene" uid="uid://ttvnatwkeuqv" path="res://Scenes/AsmDiffWindow.tscn" id="4_py4v6"]
+
+[node name="ScratchPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pdha3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="UserAvatar" type="TextureRect" parent="VBoxContainer/Header"]
+layout_mode = 2
+texture = ExtResource("1_xc6vo")
+expand_mode = 2
+stretch_mode = 4
+
+[node name="UsernameLabel" type="Label" parent="VBoxContainer/Header"]
+layout_mode = 2
+text = "Username"
+
+[node name="ArrowSeperator" type="Label" parent="VBoxContainer/Header"]
+layout_mode = 2
+text = ">"
+
+[node name="FunctionNameLabel" type="Label" parent="VBoxContainer/Header"]
+layout_mode = 2
+text = "FunctionName"
+
+[node name="TimestampLabel" type="Label" parent="VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.576471, 0.576471, 0.576471, 1)
+theme_override_font_sizes/font_size = 12
+text = "Timestamp"
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TabContainer" type="TabContainer" parent="VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+current_tab = 2
+
+[node name="About" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ScoreRichTextLabel" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "Score: 70 (70.43%)"
+
+[node name="OwnerRichTextLabel" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Owner: Username"
+
+[node name="ForkOfTextLabel2" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Fork of: FunctionName by Username"
+
+[node name="PlatformRichTextLabel3" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Platform: Platform"
+
+[node name="PresetRichTextLabel4" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Preset: Preset"
+
+[node name="CreatedRichTextLabel5" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Created: Date"
+
+[node name="ModifiedRichTextLabel6" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/TabContainer/About"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+text = "Modified: Date"
+
+[node name="Family" type="Control" parent="VBoxContainer/HSplitContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Source Code" type="Control" parent="VBoxContainer/HSplitContainer/TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="CodeEdit" parent="VBoxContainer/HSplitContainer/TabContainer/Source Code" instance=ExtResource("2_40dmx")]
+layout_mode = 1
+
+[node name="Context" type="Control" parent="VBoxContainer/HSplitContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="CodeEdit" parent="VBoxContainer/HSplitContainer/TabContainer/Context" instance=ExtResource("2_40dmx")]
+layout_mode = 1
+
+[node name="Options" type="Control" parent="VBoxContainer/HSplitContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="VBoxContainer/HSplitContainer/HBoxContainer"]
+visible = false
+layout_mode = 2
+text = "Compilation 70 (99.83%)"
+
+[node name="AsmDiffWindow" parent="VBoxContainer/HSplitContainer/HBoxContainer" instance=ExtResource("4_py4v6")]
+layout_mode = 2

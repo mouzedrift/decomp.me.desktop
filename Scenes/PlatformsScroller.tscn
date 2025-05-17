@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3 uid="uid://df7obofde6vc2"]
+
+[ext_resource type="Script" uid="uid://lu5385wq7p5s" path="res://Scripts/PlatformsScroller.cs" id="1_pa13k"]
+
+[node name="PlatformsScroller" type="ScrollContainer" node_paths=PackedStringArray("_hboxContainer")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+vertical_scroll_mode = 0
+script = ExtResource("1_pa13k")
+_hboxContainer = NodePath("HBoxContainer")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3

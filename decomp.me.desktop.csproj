@@ -1,0 +1,23 @@
+<Project Sdk="Godot.NET.Sdk/4.4.0">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ClangSharp" Version="20.1.2" />
+    <PackageReference Include="libclang.runtime.win-x64" Version="20.1.2" />
+    <PackageReference Include="libClangSharp.runtime.win-x64" Version="20.1.2" />
+    <PackageReference Include="OmniSharp.Extensions.LanguageClient" Version="0.19.9" />
+    <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="Godot.SourceGenerators" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="GodotSharp" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="GodotSharpEditor" Version="4.4.1" />
+  </ItemGroup>
+</Project>

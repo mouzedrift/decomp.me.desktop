@@ -1,0 +1,60 @@
+[gd_resource type="Theme" load_steps=11 format=3 uid="uid://di6i2be3ymow8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2oxte"]
+bg_color = Color(0.510045, 0.64193, 0.507931, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p3rhg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0av0d"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6vq65"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2oxte"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0av0d"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_i771d"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jeyt7"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.411765, 0.411765, 0.411765, 0.196078)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k5pjc"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+draw_center = false
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_c67cf"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[resource]
+TabBar/styles/button_pressed = SubResource("StyleBoxFlat_2oxte")
+TabBar/styles/tab_focus = SubResource("StyleBoxEmpty_p3rhg")
+TabBar/styles/tab_hovered = null
+TabBar/styles/tab_selected = SubResource("StyleBoxFlat_0av0d")
+TabBar/styles/tab_unselected = SubResource("StyleBoxEmpty_6vq65")
+TabContainer/font_sizes/font_size = 14
+TabContainer/styles/panel = SubResource("StyleBoxEmpty_2oxte")
+TabContainer/styles/tab_disabled = SubResource("StyleBoxEmpty_0av0d")
+TabContainer/styles/tab_focus = SubResource("StyleBoxEmpty_i771d")
+TabContainer/styles/tab_hovered = SubResource("StyleBoxFlat_jeyt7")
+TabContainer/styles/tab_selected = SubResource("StyleBoxFlat_k5pjc")
+TabContainer/styles/tab_unselected = SubResource("StyleBoxEmpty_c67cf")
