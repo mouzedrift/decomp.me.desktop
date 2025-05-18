@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://d14c2fslmupww"]
+[gd_scene load_steps=6 format=3 uid="uid://d14c2fslmupww"]
 
 [ext_resource type="Script" uid="uid://b7fbjpg5263yr" path="res://Scripts/ScratchPage.cs" id="1_pdha3"]
 [ext_resource type="Texture2D" uid="uid://dqjbtm21n2njc" path="res://icon.svg" id="1_xc6vo"]
 [ext_resource type="PackedScene" uid="uid://bpudcsy1w1nsi" path="res://Scenes/CppCodeEdit.tscn" id="2_40dmx"]
+[ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Scenes/NavigationHeader.tscn" id="2_typ7n"]
 [ext_resource type="PackedScene" uid="uid://ttvnatwkeuqv" path="res://Scenes/AsmDiffWindow.tscn" id="4_py4v6"]
 
 [node name="ScratchPage" type="Control"]
@@ -21,6 +22,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="NavigationHeader" parent="VBoxContainer" instance=ExtResource("2_typ7n")]
+layout_mode = 2
 
 [node name="Header" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2

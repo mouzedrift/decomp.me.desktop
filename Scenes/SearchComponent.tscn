@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://bivlcn4vck6eo"]
+
+[node name="SearchComponent" type="TextEdit"]
+offset_right = 162.0
+offset_bottom = 44.0
+size_flags_horizontal = 4
+placeholder_text = "Search decomp.me"

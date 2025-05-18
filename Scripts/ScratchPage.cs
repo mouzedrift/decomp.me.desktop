@@ -33,15 +33,13 @@ public partial class ScratchPage : Control
 			Directory.CreateDirectory(_scratchDir);
 		}
 
-		string owner = scratch.owner != null ? scratch.owner.username : "No Owner";
-
-		GetNode<Label>("VBoxContainer/Header/UsernameLabel").Text = owner;
+		GetNode<Label>("VBoxContainer/Header/UsernameLabel").Text = scratch.GetOwnerName();
 		GetNode<Label>("VBoxContainer/Header/FunctionNameLabel").Text = scratch.name;
 		GetNode<Label>("VBoxContainer/Header/TimestampLabel").Text = scratch.GetLastUpdatedTime();
 
 		string scoreStr = $"Score: {scratch.score} ({scratch.GetMatchPercentage()})";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {owner}";
+		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {scratch.GetOwnerName()}";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ForkOfTextLabel2").Text = $"Fork of: {scratch.parent}"; // TODO
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PlatformRichTextLabel3").Text = $"Platform: {scratch.platform}";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PresetRichTextLabel4").Text = $"Preset: {scratch.preset}"; // TODO

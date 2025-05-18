@@ -30,6 +30,7 @@ project/assembly_name="decomp.me.desktop"
 
 theme/custom="uid://di6i2be3ymow8"
 theme/custom_font="uid://cftr1wakihslj"
+theme/default_font_multichannel_signed_distance_field=true
 
 [rendering]
 

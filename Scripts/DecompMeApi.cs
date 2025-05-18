@@ -12,7 +12,8 @@ public partial class DecompMeApi : Node
 {
 	public static DecompMeApi Instance;
 
-	#nullable enable
+#nullable enable
+
 	public class ScratchList
 	{
 		public string? next { get; set; }
@@ -58,6 +59,11 @@ public partial class DecompMeApi : Node
 			var lastUpdated = DateTime.Parse(last_updated);
 			return Utils.FormatRelativeTime(DateTime.Now - lastUpdated);
 		}
+
+		public string GetOwnerName()
+		{
+			return owner != null ? owner.username : "No Owner";
+		}
 	}
 
 	public class ScratchOwner
@@ -75,6 +81,21 @@ public partial class DecompMeApi : Node
 			return $"https://avatars.githubusercontent.com/u/{github_id}";
 		}
 	}
+	public class PresetListItem
+	{
+		public int? id { get; set; }
+		public string? name { get; set; }
+		public string? platform { get; set; }
+		public string? compiler { get; set; }
+		public string? assembler_flags { get; set; }
+		public string? compiler_flags { get; set; }
+		public List<string>? diff_flags { get; set; } // TODO: type not confirmed 
+		public string? decompiler_flags { get; set; }
+		public List<string>? libraries { get; set; } // TODO: type not confirmed 
+		public int? num_scratches { get; set; }
+		public ScratchOwner? owner { get; set; }
+	}
+
 #nullable disable
 
 	public partial class ScratchListItemRequest : HttpRequest

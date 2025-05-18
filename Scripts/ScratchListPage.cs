@@ -8,19 +8,22 @@ public partial class ScratchListPage : Node
 	private Button _showMoreButton;
 
 	private DecompMeApi.ScratchList _latestScratchList;
+	private DecompMeApi.ScratchListRequest _request;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/MarginContainer/VBoxContainer");
-		_showMoreButton = GetNode<Button>("ScrollContainer/MarginContainer/VBoxContainer/ShowMoreButton");
+		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer");
+		_showMoreButton = GetNode<Button>("ScrollContainer/VBoxContainer/ShowMoreButton");
 
 		_showMoreButton.Visible = false;
 
-		var request = DecompMeApi.Instance.RequestScratchList();
-		request.DataReceived += () =>
+		_request = DecompMeApi.Instance.RequestScratchList();
+		_request.DataReceived += () =>
 		{
-			Populate(request.Data);
-			request.QueueFree();
+			Populate(_request.Data);
+			_request.QueueFree();
+			_request = null;
 		};
 
 		_showMoreButton.Pressed += NextPage;
@@ -38,7 +41,7 @@ public partial class ScratchListPage : Node
 			var card = SCRATCH_CARD.Instantiate<ScratchCard>();
 			card.SetFunctionName(scratch.name, scratch.slug);
 			card.SetPresetName(scratch.preset.ToString()); // TODO
-			card.SetUsername(scratch.owner != null ? scratch.owner.username : "No Owner");
+			card.SetUsername(scratch.GetOwnerName());
 			card.SetTimestamp(scratch.last_updated);
 			card.SetMatchPercentage(scratch.GetMatchPercentage());
 
@@ -52,11 +55,12 @@ public partial class ScratchListPage : Node
 
 	private void NextPage()
 	{
-		var request = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
-		request.DataReceived += () =>
+		_request = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
+		_request.DataReceived += () =>
 		{
-			Populate(request.Data);
-			request.QueueFree();
+			Populate(_request.Data);
+			_request.QueueFree();
+			_request = null;
 		};
 	}
 }

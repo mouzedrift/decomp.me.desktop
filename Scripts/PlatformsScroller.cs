@@ -1,61 +1,96 @@
+using ClangSharp;
 using Godot;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public partial class PlatformsScroller : ScrollContainer
+public partial class PlatformsScroller : Control
 {
+	private readonly Vector2I TargetTextureSize = new Vector2I(128, 128);
+	private readonly Vector2I TargetSpacerSize = new Vector2I(48, 48);
+
 	private readonly List<string> _platformPaths = new List<string>()
 	{
-		{"res://Images/Platforms/msdos.svg"},
-		{"res://Images/Platforms/irix.svg"},
-		{"res://Images/Platforms/win32.svg"},
-		{"res://Images/Platforms/macosx.svg"},
-		{"res://Images/Platforms/n64.svg"},
-		{"res://Images/Platforms/gba.svg"},
-		{"res://Images/Platforms/gc_wii.svg"},
-		{"res://Images/Platforms/nds.svg"},
-		{"res://Images/Platforms/ps1.svg"},
-		{"res://Images/Platforms/ps2.svg"},
-		{"res://Images/Platforms/psp.svg"},
-		{"res://Images/Platforms/n3ds.svg"},
-		{"res://Images/Platforms/switch.svg"},
-		{"res://Images/Platforms/saturn.svg"},
-		{"res://Images/Platforms/dreamcast.svg"}
+		{"res://Images/Platforms/Png/msdos.png"},
+		{"res://Images/Platforms/Png/irix.png"},
+		{"res://Images/Platforms/Png/win32.png"},
+		{"res://Images/Platforms/Png/macosx.png"},
+		{"res://Images/Platforms/Png/n64.png"},
+		{"res://Images/Platforms/Png/gba.png"},
+		{"res://Images/Platforms/Png/gc_wii.png"},
+		{"res://Images/Platforms/Png/nds.png"},
+		{"res://Images/Platforms/Png/ps1.png"},
+		{"res://Images/Platforms/Png/ps2.png"},
+		{"res://Images/Platforms/Png/psp.png"},
+		{"res://Images/Platforms/Png/n3ds.png"},
+		{"res://Images/Platforms/Png/switch.png"},
+		{"res://Images/Platforms/Png/saturn.png"},
+		{"res://Images/Platforms/Png/dreamcast.png"}
 	};
 
 	[Export] private HBoxContainer _hboxContainer;
+	[Export] private SubViewport _subViewport;
+	[Export] private TextureRect _renderTarget;
+
+	private int _newImageIdx = 0;
+	private bool _init = false;
+	private Vector2I _targetViewportSize = Vector2I.Zero;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		ScrollHorizontal = (int)GetHScrollBar().MaxValue;
-		InsertImages();
+		InsertAllImages();
+
+		RenderingServer.FramePostDraw += () =>
+		{
+			if (!_init)
+			{
+				var targetSize = (Vector2I)_hboxContainer.Size;
+				_subViewport.Size = targetSize;
+
+				_renderTarget.Texture = _subViewport.GetTexture();
+
+				_init = true;
+			}
+		};
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		ScrollHorizontal += (int)(-250f * delta);
-		if (ScrollHorizontal <= 0)
+	}
+
+	private void InsertAllImages()
+	{
+		for (int i = 0; i < _platformPaths.Count; i++)
 		{
-			ScrollHorizontal = (int)GetHScrollBar().MaxValue;
+			AddNextImage();
+			AddSpacer();
 		}
 	}
 
-	private void InsertImages()
+	private void AddNextImage()
 	{
-		foreach (var imagePath in _platformPaths)
-		{
-			TextureRect texRect = new TextureRect();
-			texRect.Texture = ResourceLoader.Load<Texture2D>(imagePath);
-			texRect.ExpandMode = TextureRect.ExpandModeEnum.KeepSize;
-			texRect.StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered;
-			texRect.SetSize(new Vector2(48, 48));
-			texRect.CustomMinimumSize = new Vector2(48, 48);
-			texRect.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
-			texRect.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-			_hboxContainer.AddChild(texRect);
-		}
+		var imagePath = _platformPaths[_newImageIdx];
+		_newImageIdx = (_newImageIdx + 1) % _platformPaths.Count;
+
+		TextureRect texRect = new TextureRect();
+		texRect.Texture = ResourceLoader.Load<Texture2D>(imagePath);
+		texRect.ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize;
+		texRect.StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered;
+		texRect.CustomMinimumSize = TargetTextureSize;
+
+		_targetViewportSize.X += TargetTextureSize.X;
+		_targetViewportSize.Y = TargetTextureSize.Y;
+
+		_hboxContainer.AddChild(texRect);
+	}
+
+	private void AddSpacer()
+	{
+		Control spacer = new Control();
+		_hboxContainer.AddChild(spacer);
+		spacer.CustomMinimumSize = TargetSpacerSize;
+		_subViewport.Size += new Vector2I(TargetSpacerSize.X, 0);
 	}
 }

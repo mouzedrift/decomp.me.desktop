@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://bt0e320ks2y6w"]
+
+[ext_resource type="Texture2D" uid="uid://dwjidbg3gr5v1" path="res://Images/purplefrog.svg" id="1_8oduo"]
+[ext_resource type="Script" uid="uid://bbl5knq4jntsq" path="res://Scenes/HomeButton.cs" id="1_cvrff"]
+
+[node name="HomeButton" type="HBoxContainer"]
+mouse_default_cursor_shape = 2
+script = ExtResource("1_cvrff")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 2
+texture = ExtResource("1_8oduo")
+stretch_mode = 2
+
+[node name="WebsiteNameLabel" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "decomp.me"
