@@ -1,22 +1,26 @@
 using Godot;
+using OmniSharp.Extensions.LanguageServer.Client;
+using OmniSharp.Extensions.LanguageServer.Protocol.Client;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.IO;
 using System.Text.Json;
-using System.Linq;
-using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
-public class AsmDiffer
+public partial class Globals : Node
 {
-	private static readonly string PythonVenvPath = ProjectSettings.GlobalizePath("user://venv");
+	public static Globals Instance;
+	public ILanguageClient LanguageClient { get; private set; }
+	public Process ClangdProcess { get; private set; }
+
+	public static readonly string ScratchRoot = ProjectSettings.GlobalizePath("user://scratch");
+
+	public static readonly string PythonVenvPath = ProjectSettings.GlobalizePath("user://venv");
 	public static readonly string BinPath = ProjectSettings.GlobalizePath("user://Bin");
-	private static string PythonVenvWslPath;
-	private static string PythonExePath;
-	private static string PythonVenvPipPath;
+	public static string PythonVenvWslPath { get; private set; }
+	public static string PythonExePath { get; private set; }
+	public static string PythonVenvPipPath { get; private set; }
 
 	private static readonly List<string> PythonRequirements = new List<string>()
 	{
@@ -35,14 +39,56 @@ public class AsmDiffer
 		"binutils-mingw-w64-i686"
 	};
 
+	// Called when the node enters the scene tree for the first time.
+	public override async void _Ready()
+	{
+		Instance = this;
+
+		Utils.CopyBinFiles();
+
+		await CheckAllDependenciesAsync();
+		await StartClangdAsync();
+	}
+
+	// Called every frame. 'delta' is the elapsed time since the previous frame.
+	public override void _Process(double delta)
+	{
+	}
+
+	private async Task StartClangdAsync()
+	{
+		string clangdPath = "C:\\Users\\mouzedrift\\Downloads\\clangd_20.1.0\\bin\\clangd.exe";
+
+		ClangdProcess = new Process();
+		ClangdProcess.StartInfo.FileName = clangdPath;
+		ClangdProcess.StartInfo.Arguments = "--log=verbose";
+		ClangdProcess.StartInfo.RedirectStandardInput = true;
+		ClangdProcess.StartInfo.RedirectStandardOutput = true;
+		ClangdProcess.StartInfo.UseShellExecute = false;
+		ClangdProcess.StartInfo.CreateNoWindow = true;
+
+		ClangdProcess.Start();
+
+		LanguageClient = await OmniSharp.Extensions.LanguageServer.Client.LanguageClient.From(
+			new LanguageClientOptions()
+			.WithInput(ClangdProcess.StandardOutput.BaseStream)
+			.WithOutput(ClangdProcess.StandardInput.BaseStream)
+			.WithInitializationOptions(new { }));
+
+		GD.Print("Clangd started!");
+	}
+
 	public static async Task CheckAllDependenciesAsync()
 	{
 		PythonVenvWslPath = await ToWslPathAsync(PythonVenvPath);
-		
+
 		PythonExePath = PythonVenvWslPath + "/bin" + "/python3";
 		PythonVenvPipPath = PythonVenvWslPath + "/bin" + "/pip3";
 
-		GD.Print(PythonVenvPath);
+		GD.Print("Python venv: " + PythonVenvPath);
+		GD.Print("Python exe: " + PythonExePath);
+		GD.Print("pip exe: " + PythonVenvPipPath);
+
 		//GD.Print(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 
 		await CreatePythonVenvAsync();
@@ -237,15 +283,12 @@ public class AsmDiffer
 				}
 			}
 		}
-		return new Dictionary<string, string>() { { "base", baseText }, { "current", currentText} };
+		return new Dictionary<string, string>() { { "base", baseText }, { "current", currentText } };
 	}
 
 	public static async Task<string> RunAsmDiffAsync(string symbol)
 	{
 		var args = $"{PythonExePath} diff.py -o --no-pager --format json -f obj.o {symbol}";
-		GD.Print("python exe is: " + PythonExePath);
-		GD.Print("args are: " + args);
-		GD.Print("bin path is: " + BinPath);
 		using var process = StartProcess("wsl", args, BinPath);
 		if (process == null)
 		{

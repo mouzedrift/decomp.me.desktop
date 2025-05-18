@@ -6,7 +6,9 @@ using System.Text.Json;
 using static DecompMeApi;
 
 
-public partial class DecompMeApi : HttpRequest
+
+
+public partial class DecompMeApi : Node
 {
 	public static DecompMeApi Instance;
 
@@ -73,77 +75,78 @@ public partial class DecompMeApi : HttpRequest
 			return $"https://avatars.githubusercontent.com/u/{github_id}";
 		}
 	}
-	#nullable disable
+#nullable disable
 
-	public enum RequestType
+	public partial class ScratchListItemRequest : HttpRequest
 	{
-		ScratchList,
-		Scratch,
-		Profile
+		public ScratchListItem Data { get; private set; }
+		[Signal] public delegate void DataReceivedEventHandler();
+
+		public override void _Ready()
+		{
+			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+			{
+				string jsonStr = body.GetStringFromUtf8();
+				Data = JsonSerializer.Deserialize<ScratchListItem>(jsonStr);
+				EmitSignal(SignalName.DataReceived);
+			};
+		}
 	}
 
-	private RequestType _requestType;
-	private object _data;
+	public partial class ScratchListRequest : HttpRequest
+	{
+		public ScratchList Data { get; private set; }
+		[Signal] public delegate void DataReceivedEventHandler();
 
-	[Signal] public delegate void DataReceivedEventHandler(Variant requestType);
+		public override void _Ready()
+		{
+			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+			{
+				string jsonStr = body.GetStringFromUtf8();
+				Data = JsonSerializer.Deserialize<ScratchList>(jsonStr);
+				EmitSignal(SignalName.DataReceived);
+			};
+		}
+	}
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		Instance = this;
-
-		RequestCompleted += OnRequestCompleted;
-
-		Utils.CopyBinFile();
 	}
 
-	public void RequestScratchList(string search = "")
+	public ScratchListRequest RequestScratchList(string search = "", int pageSize = 20)
 	{
-		_requestType = RequestType.ScratchList;
+		var httpRequest = new ScratchListRequest();
+		AddChild(httpRequest);
 		if (search != "")
 		{
-			Request($"https://decomp.me/api/scratch?search={search}");
+			httpRequest.Request($"https://decomp.me/api/scratch?search={search}&page_size={pageSize}");
 		}
 		else
 		{
-			Request("https://decomp.me/api/scratch");
-		}
-	}
-
-	public void RequestScratch(string url)
-	{
-		_requestType = RequestType.Scratch;
-		Request(url);
-	}
-
-	public T GetData<T>()
-	{
-		return (T)_data;
-	}
-
-	public static bool IsType(RequestType requestType, Variant variantType)
-	{
-		return (int)requestType == variantType.AsInt32();
-	}
-
-	private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
-	{
-		string jsonStr = body.GetStringFromUtf8();
-		if (_requestType == RequestType.ScratchList)
-		{
-			_data = JsonSerializer.Deserialize<ScratchList>(jsonStr);
-		}
-		else if (_requestType == RequestType.Scratch)
-		{
-			_data = JsonSerializer.Deserialize<ScratchListItem>(jsonStr);
-		}
-		else
-		{
-			return;
+			httpRequest.Request($"https://decomp.me/api/scratch?page_size={pageSize}");
 		}
 
-		EmitSignal(SignalName.DataReceived, (int)_requestType);
+		return httpRequest;
 	}
+
+	public ScratchListRequest RequestNextScratchList(string url, int pageSize = 20)
+	{
+		var httpRequest = new ScratchListRequest();
+		AddChild(httpRequest);
+		httpRequest.Request($"{url}&page_size={pageSize}");
+		return httpRequest;
+	}
+
+	public ScratchListItemRequest RequestScratch(string url)
+	{
+		var httpRequest = new ScratchListItemRequest();
+		AddChild(httpRequest);
+		httpRequest.Request(url);
+		return httpRequest;
+	}
+
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)

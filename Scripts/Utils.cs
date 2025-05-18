@@ -37,7 +37,7 @@ public class Utils
 		}
 	}
 
-	public static void CopyBinFile()
+	public static void CopyBinFiles()
 	{
 		string binFolder = ProjectSettings.GlobalizePath("user://Bin");
 		if (!Directory.Exists(binFolder))

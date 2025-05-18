@@ -38,15 +38,13 @@ public partial class ScratchCard : PanelContainer
 
 		_functionNameLabel.MetaClicked += (Variant meta) =>
 		{
-			DecompMeApi.Instance.RequestScratch(meta.AsString());
-			DecompMeApi.Instance.DataReceived += (Variant requestType) =>
+			var request = DecompMeApi.Instance.RequestScratch(meta.AsString());
+			request.DataReceived += () =>
 			{
-				if (DecompMeApi.IsType(DecompMeApi.RequestType.Scratch, requestType))
-				{
-					var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-					scratchPage.Populate(DecompMeApi.Instance.GetData<DecompMeApi.ScratchListItem>());
-					SceneManager.Instance.ChangeScene(scratchPage);
-				}
+				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
+				scratchPage.Populate(request.Data);
+				SceneManager.Instance.ChangeScene(scratchPage);
+				request.QueueFree();
 			};
 
 			GD.Print($"meta clicked: {meta.AsString()}");

@@ -20,6 +20,7 @@ config/icon="uid://dwjidbg3gr5v1"
 
 DecompMeApi="*res://Scripts/DecompMeApi.cs"
 SceneManager="*res://Scripts/SceneManager.cs"
+Globals="*res://Scripts/Globals.cs"
 
 [dotnet]
 

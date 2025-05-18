@@ -3,16 +3,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Reactive.Concurrency;
-using System.Threading.Tasks;
-using static DecompMeApi;
 
 public partial class ScratchPage : Control
 {
-	private readonly string ScratchRoot = ProjectSettings.GlobalizePath("user://scratch");
 	private Stopwatch _stopwatch = new Stopwatch();
 	private HttpRequest _httpRequest;
-	private string _targetAsm;
 	private AsmDiffWindow _asmDiffWindow;
 	private DecompMeApi.ScratchListItem _scratch;
 	private string _scratchDir;
@@ -32,7 +27,7 @@ public partial class ScratchPage : Control
 	{
 		_scratch = scratch;
 
-		_scratchDir = ScratchRoot.PathJoin(scratch.slug);
+		_scratchDir = Globals.ScratchRoot.PathJoin(scratch.slug);
 		if (!Directory.Exists(_scratchDir))
 		{
 			Directory.CreateDirectory(_scratchDir);
@@ -71,7 +66,8 @@ public partial class ScratchPage : Control
 		using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
 
 		var asmTarget = archive.GetEntry("target.s");
-		if (asmTarget == null)
+		bool asmTargetAvailable = asmTarget != null;
+		if (!asmTargetAvailable)
 		{
 			GD.Print("Could not find target.s in exported scratch zip, falling back to target.o");
 		}
@@ -90,34 +86,35 @@ public partial class ScratchPage : Control
 			return;
 		}
 
-		using var asmTargetReader = new StreamReader(asmTarget.Open());
+		if (asmTargetAvailable)
+		{
+			using var asmTargetReader = new StreamReader(asmTarget.Open());
+			string targetAsm = asmTargetReader.ReadToEnd();
+			File.WriteAllText(_scratchDir.PathJoin("target.s"), targetAsm);
+		}
+
 		using var objCurrentMs = new MemoryStream();
 		using var objTargetMs = new MemoryStream();
 		objCurrent.Open().CopyTo(objCurrentMs);
 		objTarget.Open().CopyTo(objTargetMs);
 
-		// TODO: assmeble asm, then  run asm-differ and parse the json
-		_targetAsm = asmTargetReader.ReadToEnd();
-
-		File.WriteAllText(_scratchDir.PathJoin("target.s"), _targetAsm);
 		File.WriteAllBytes(_scratchDir.PathJoin("target.o"), objTargetMs.ToArray());
 
-		var expectedDir = Path.Combine(AsmDiffer.BinPath, "expected");
+		var expectedDir = Path.Combine(Globals.BinPath, "expected");
 		if (!Directory.Exists(expectedDir))
 		{
 			Directory.CreateDirectory(expectedDir);
 		}
 
-		// the expected object
-		var expectedPath = Path.Combine(expectedDir, "obj.o");
-		File.Copy(_scratchDir.PathJoin("target.o"), expectedPath, true);
+		var expectedObjPath = Path.Combine(expectedDir, "obj.o");
+		File.Copy(_scratchDir.PathJoin("target.o"), expectedObjPath, true);
 
-		// our object
-		File.WriteAllBytes(Path.Combine(AsmDiffer.BinPath, "obj.o"), objCurrentMs.ToArray());
+		var ourObjPath = Path.Combine(Globals.BinPath, "obj.o");
+		File.WriteAllBytes(ourObjPath, objCurrentMs.ToArray());
 
-		await AsmDiffer.CheckAllDependenciesAsync();
-		var json = await AsmDiffer.RunAsmDiffAsync(_scratch.name);
-		var diffs = AsmDiffer.ParseAsmDifferJson(json);
+		var json = await Globals.RunAsmDiffAsync(_scratch.name);
+		var diffs = Globals.ParseAsmDifferJson(json);
+
 		_asmDiffWindow.SetTargetText(diffs["base"]);
 		_asmDiffWindow.SetCurrentText(diffs["current"]);
 	}

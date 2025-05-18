@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class ScratchListPage : Node
 {
@@ -17,13 +16,11 @@ public partial class ScratchListPage : Node
 
 		_showMoreButton.Visible = false;
 
-		DecompMeApi.Instance.RequestScratchList();
-		DecompMeApi.Instance.DataReceived += (Variant type) =>
+		var request = DecompMeApi.Instance.RequestScratchList();
+		request.DataReceived += () =>
 		{
-			if (DecompMeApi.IsType(DecompMeApi.RequestType.ScratchList, type))
-			{
-				Populate(DecompMeApi.Instance.GetData<DecompMeApi.ScratchList>());
-			}
+			Populate(request.Data);
+			request.QueueFree();
 		};
 
 		_showMoreButton.Pressed += NextPage;
@@ -55,6 +52,11 @@ public partial class ScratchListPage : Node
 
 	private void NextPage()
 	{
-		DecompMeApi.Instance.Request(_latestScratchList.next);
+		var request = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
+		request.DataReceived += () =>
+		{
+			Populate(request.Data);
+			request.QueueFree();
+		};
 	}
 }
