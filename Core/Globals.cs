@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,10 +19,9 @@ public partial class Globals : Node
 	public Process ClangdProcess { get; private set; }
 
 	public static readonly string ScratchRoot = ProjectSettings.GlobalizePath("user://scratch");
-	public static readonly string PythonVenvPath = ProjectSettings.GlobalizePath("user://venv");
+	public static string PythonVenvPath = ProjectSettings.GlobalizePath("user://venv");
 	public static readonly string BinPath = ProjectSettings.GlobalizePath("user://bin");
 	public static readonly string CompilersPath = ProjectSettings.GlobalizePath("user://compilers");
-	public static string PythonVenvWslPath { get; private set; }
 	public static string PythonExePath { get; private set; }
 	public static string PythonVenvPipPath { get; private set; }
 
@@ -70,6 +70,8 @@ public partial class Globals : Node
 
 	private async Task StartClangdAsync()
 	{
+		// TODO: dont hardcode
+		/*
 		string clangdPath = "C:\\Users\\mouzedrift\\Downloads\\clangd_20.1.0\\bin\\clangd.exe";
 
 		ClangdProcess = new Process();
@@ -89,20 +91,22 @@ public partial class Globals : Node
 			.WithInitializationOptions(new { }));
 
 		GD.Print("Clangd started!");
+		*/
 	}
 
 	public static async Task CheckAllDependenciesAsync()
 	{
-		PythonVenvWslPath = await ToWslPathAsync(PythonVenvPath);
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			PythonVenvPath = await ToWslPathAsync(PythonVenvPath);
+		}
 
-		PythonExePath = PythonVenvWslPath + "/bin" + "/python3";
-		PythonVenvPipPath = PythonVenvWslPath + "/bin" + "/pip3";
+		PythonExePath = PythonVenvPath + "/bin" + "/python3";
+		PythonVenvPipPath = PythonVenvPath + "/bin" + "/pip3";
 
 		GD.Print("Python venv: " + PythonVenvPath);
 		GD.Print("Python exe: " + PythonExePath);
 		GD.Print("pip exe: " + PythonVenvPipPath);
-
-		//GD.Print(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 
 		await CreatePythonVenvAsync();
 		if (await IsPythonInstalledAsync() && await ArePackagesInstalledAsync())
@@ -208,7 +212,16 @@ public partial class Globals : Node
 
 	private static async Task<bool> CreatePythonVenvAsync()
 	{
-		using var process = StartProcess("wsl", $"python3 -m venv {PythonVenvWslPath}");
+		Process process = new Process();
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			process = StartProcess("wsl", $"python3 -m venv {PythonVenvPath}");
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			process = StartProcess("python3", $"-m venv {PythonVenvPath}");
+		}
+
 		if (process == null)
 		{
 			GD.Print("Failed to create python venv!");
@@ -301,8 +314,16 @@ public partial class Globals : Node
 
 	public static async Task<string> RunAsmDiffAsync(string symbol)
 	{
-		var args = $"{PythonExePath} diff.py -o --no-pager --format json -f obj.o {symbol}";
-		using var process = StartProcess("wsl", args, BinPath);
+		Process process = new Process();
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			process = StartProcess("wsl", $"{PythonExePath} diff.py -o --no-pager --format json -f obj.o {symbol}", BinPath);
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			process = StartProcess($"{PythonExePath} diff.py", $"-o --no-pager --format json -f obj.o {symbol}", BinPath);
+		}
+
 		if (process == null)
 		{
 			GD.Print("Failed to start diff.py process");

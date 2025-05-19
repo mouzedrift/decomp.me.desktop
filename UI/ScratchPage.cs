@@ -204,7 +204,6 @@ public partial class ScratchPage : Control
 			File.Copy(src, dst, true);
 
 			var json = await Globals.RunAsmDiffAsync(_scratch.name);
-			GD.Print(json);
 			var diffs = Globals.ParseAsmDifferJson(json);
 
 			_asmDiffWindow.SetTargetText(diffs["base"]);
