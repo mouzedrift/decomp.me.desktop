@@ -19,9 +19,13 @@ config/icon="uid://dwjidbg3gr5v1"
 
 [autoload]
 
-DecompMeApi="*res://Scripts/DecompMeApi.cs"
-SceneManager="*res://Scripts/SceneManager.cs"
-Globals="*res://Scripts/Globals.cs"
+DecompMeApi="*res://Core/DecompMeApi.cs"
+SceneManager="*res://Core/SceneManager.cs"
+Globals="*res://Core/Globals.cs"
+
+[display]
+
+window/subwindows/embed_subwindows=false
 
 [dotnet]
 

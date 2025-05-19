@@ -1,0 +1,63 @@
+[gd_scene load_steps=5 format=3 uid="uid://df7obofde6vc2"]
+
+[ext_resource type="Script" uid="uid://lu5385wq7p5s" path="res://UI/PlatformsScroller.cs" id="1_pa13k"]
+[ext_resource type="Shader" uid="uid://ywn5efomakda" path="res://Assets/Shaders/PlatformsScroller.gdshader" id="2_7x37h"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xe0vs"]
+shader = ExtResource("2_7x37h")
+shader_parameter/speed = -0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7x37h"]
+shader = ExtResource("2_7x37h")
+shader_parameter/speed = -30.0
+
+[node name="PlatformsScroller" type="Control" node_paths=PackedStringArray("_hboxContainer", "_subViewport", "_renderTarget")]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -64.0
+offset_top = -64.0
+offset_right = 64.0
+offset_bottom = 64.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 2
+script = ExtResource("1_pa13k")
+_hboxContainer = NodePath("SubViewport/HBoxContainer")
+_subViewport = NodePath("SubViewport")
+_renderTarget = NodePath("RenderTarget")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+size_2d_override_stretch = true
+render_target_update_mode = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SubViewport"]
+material = SubResource("ShaderMaterial_xe0vs")
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RenderTarget" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_7x37h")
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = -64.0
+offset_bottom = 64.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 1

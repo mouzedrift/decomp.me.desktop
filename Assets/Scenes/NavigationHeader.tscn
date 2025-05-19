@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3 uid="uid://pscjob0u0d2d"]
+
+[ext_resource type="PackedScene" uid="uid://bt0e320ks2y6w" path="res://Assets/Scenes/HomeButton.tscn" id="1_0nfxb"]
+[ext_resource type="Texture2D" uid="uid://dwjidbg3gr5v1" path="res://Assets/Images/purplefrog.svg" id="1_7q8nx"]
+
+[node name="NavigationHeader" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 48)
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 48.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" parent="HBoxContainer" instance=ExtResource("1_0nfxb")]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Spacer" type="Control" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="NewScratchButton" type="Button" parent="HBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 14
+text = "New Scratch"
+
+[node name="SettingsButton" type="Button" parent="HBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 14
+text = "Settings"
+
+[node name="Button" type="Button" parent="HBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_constants/icon_max_width = 28
+icon = ExtResource("1_7q8nx")

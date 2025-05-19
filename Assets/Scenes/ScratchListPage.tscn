@@ -1,0 +1,167 @@
+[gd_scene load_steps=11 format=3 uid="uid://dgrhdqs4p8wr3"]
+
+[ext_resource type="Script" uid="uid://cki3wrgxcjv7i" path="res://UI/ScratchListPage.cs" id="1_6f47n"]
+[ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Assets/Scenes/NavigationHeader.tscn" id="2_2vs54"]
+[ext_resource type="PackedScene" uid="uid://df7obofde6vc2" path="res://Assets/Scenes/PlatformsScroller.tscn" id="3_lfjmv"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_lfjmv"]
+line_spacing = -24.0
+font_size = 56
+outline_size = 6
+
+[sub_resource type="LabelSettings" id="LabelSettings_hpjmb"]
+line_spacing = -4.0
+font_size = 18
+font_color = Color(0.694118, 0.686275, 0.721569, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lfjmv"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.584314, 0.121569, 0.85098, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.792157, 0.121569, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="LabelSettings" id="LabelSettings_1kaky"]
+line_spacing = -4.0
+font_size = 12
+font_color = Color(0.694118, 0.686275, 0.721569, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_gfxd6"]
+line_spacing = -4.0
+font_size = 12
+font_color = Color(0.694118, 0.686275, 0.721569, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_qkawr"]
+line_spacing = -4.0
+font_size = 12
+font_color = Color(0.694118, 0.686275, 0.721569, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6f47n"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+draw_center = false
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.184314, 0.184314, 0.184314, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ScratchListPage" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_6f47n")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="NavigationHeader" parent="ScrollContainer/VBoxContainer" instance=ExtResource("2_2vs54")]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Collaboratively
+ decompile code in your
+browser."
+label_settings = SubResource("LabelSettings_lfjmv")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlatformsScroller" parent="ScrollContainer/VBoxContainer/VBoxContainer/Label" instance=ExtResource("3_lfjmv")]
+z_index = -1
+layout_mode = 1
+size_flags_vertical = 3
+
+[node name="Label2" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/line_spacing = -4
+theme_override_font_sizes/font_size = 18
+text = "A collaborative reverse-engineering platform for working on decompilation
+ projects with others to learn about how your favorite games work."
+label_settings = SubResource("LabelSettings_hpjmb")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Button" type="Button" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_lfjmv")
+text = "Start decomping ->"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 48
+
+[node name="Label3" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = -4
+theme_override_font_sizes/font_size = 18
+text = "159.963 scratches created"
+label_settings = SubResource("LabelSettings_1kaky")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label4" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = -4
+theme_override_font_sizes/font_size = 18
+text = "2.225 users signed up"
+label_settings = SubResource("LabelSettings_gfxd6")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label5" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = -4
+theme_override_font_sizes/font_size = 18
+text = "143.178 asm globs submitted"
+label_settings = SubResource("LabelSettings_qkawr")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ShowMoreButton" type="Button" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.603922, 0.6, 0.603922, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_6f47n")
+text = "Show more"
