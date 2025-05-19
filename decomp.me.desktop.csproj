@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ClangSharp" Version="20.1.2" />
-    <PackageReference Include="libclang.runtime.win-x64" Version="20.1.2" />
+    <PackageReference Include="libClangSharp.runtime.linux-x64" Version="20.1.2" />
     <PackageReference Include="libClangSharp.runtime.win-x64" Version="20.1.2" />
     <PackageReference Include="OmniSharp.Extensions.LanguageClient" Version="0.19.9" />
     <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
