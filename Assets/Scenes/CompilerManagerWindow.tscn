@@ -36,4 +36,4 @@ size_flags_vertical = 3
 
 [node name="InstallButton" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Install"
+text = "Install/Uninstall"

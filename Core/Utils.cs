@@ -43,6 +43,12 @@ public class Utils
 	public static void CopyBinFiles()
 	{
 		Directory.CreateDirectory(Globals.BinPath);
+		if (File.Exists(Globals.BinPath.PathJoin("diff.py")) &&
+			File.Exists(Globals.BinPath.PathJoin("diff_settings.py")) &&
+			File.Exists(Globals.BinPath.PathJoin("diff-stylesheet.css")))
+		{
+			return;
+		}
 
 		var resDir = DirAccess.Open("res://Assets/Bin");
 		if (resDir.ListDirBegin() != Error.Ok)

@@ -30,6 +30,7 @@ public partial class DecompMeApi : Node
 		public string? creation_time { get; set; }
 		public string? platform { get; set; }
 		public string? compiler { get; set; }
+		public string? compiler_flags { get; set; }
 		public int? preset { get; set; }
 		public string? name { get; set; }
 		public string? description { get; set; }

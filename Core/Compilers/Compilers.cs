@@ -1,7 +1,9 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 
 namespace DecompMeDesktop.Core.Compilers;
 
@@ -27,6 +29,8 @@ public interface ICompiler
 		var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
 		Directory.Delete(compilerPath, true);
 	}
+
+	public void UpdateEnvironment(StringDictionary env);
 }
 
 public class MSVCCompiler(string version, string downloadUrl) : ICompiler
@@ -34,6 +38,13 @@ public class MSVCCompiler(string version, string downloadUrl) : ICompiler
 	public string Platform { get; private set; } = "win32";
 	public string Version { get; private set; } = version;
 	public string DownloadUrl { get; private set; } = downloadUrl;
+
+	public void UpdateEnvironment(StringDictionary env)
+	{
+		string binPath = Path.Combine(Globals.CompilersPath, Platform, Version, "Bin");
+		env["PATH"] = $"{binPath};" + env["PATH"];
+		env["INCLUDE"] = Path.Combine(Globals.CompilersPath, Platform, Version, "Include");
+	}
 }
 
 public class Compilers
@@ -55,5 +66,35 @@ public class Compilers
 		new MSVCCompiler("msvc8.0p", "https://github.com/widberg/msvc8.0/archive/52c8293f8b8d6441c594cf096542290c17a4d70e.zip"),
 	};
 
+	public static List<ICompiler> GetAllCompilers()
+	{
+		List<ICompiler> allCompilers = [];
+		allCompilers.AddRange(Win32Compilers);
 
+		return allCompilers;
+	}
+
+	public static bool IsCompilerInstalled(string version)
+	{
+		foreach (var compiler in GetAllCompilers())
+		{
+			if (compiler.Version == version && compiler.IsInstalled())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static ICompiler GetCompiler(string version)
+	{
+		foreach (var compiler in GetAllCompilers())
+		{
+			if (compiler.Version == version && compiler.IsInstalled())
+			{
+				return compiler;
+			}
+		}
+		return null;
+	}
 }

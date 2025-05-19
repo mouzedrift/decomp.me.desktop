@@ -49,10 +49,10 @@ public partial class Globals : Node
 
 		CreateDirectories();
 
-		//Utils.CopyBinFiles();
+		Utils.CopyBinFiles();
 
-		//await CheckAllDependenciesAsync();
-		//await StartClangdAsync();
+		await CheckAllDependenciesAsync();
+		await StartClangdAsync();
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -313,6 +313,9 @@ public partial class Globals : Node
 		string error = await process.StandardError.ReadToEndAsync();
 
 		await process.WaitForExitAsync();
+
+		GD.Print(error);
+
 		return diffJson;
 	}
 

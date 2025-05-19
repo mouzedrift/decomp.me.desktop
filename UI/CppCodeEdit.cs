@@ -8,6 +8,8 @@ namespace DecompMeDesktop.UI;
 
 public partial class CppCodeEdit : CodeEdit
 {
+	[Signal] public delegate void SaveRequestedEventHandler();
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -27,6 +29,7 @@ public partial class CppCodeEdit : CodeEdit
 
 	private async void OnTextChanged()
 	{
+		/*
 		var line = GetCaretLine();
 		var column = GetCaretColumn();
 
@@ -96,6 +99,7 @@ public partial class CppCodeEdit : CodeEdit
 		}
 
 		UpdateCodeCompletionOptions(true);
+		*/
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -105,11 +109,13 @@ public partial class CppCodeEdit : CodeEdit
 
 	public override void _Input(InputEvent @event)
 	{
-		if (Input.IsKeyPressed(Key.Period))
+		//if (Input.IsKeyPressed(Key.Period))
+		//{
+		//	EmitSignalCodeCompletionRequested();
+		//}
+		if (Input.IsActionJustPressed("code_save"))
 		{
-			EmitSignalCodeCompletionRequested();
+			EmitSignal(SignalName.SaveRequested);
 		}
 	}
-
-
 }
