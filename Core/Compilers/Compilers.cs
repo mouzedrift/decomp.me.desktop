@@ -5,39 +5,39 @@ using System.IO;
 
 namespace DecompMeDesktop.Core.Compilers;
 
+public interface ICompiler
+{
+	public string Platform { get; }
+	public string Version { get; }
+	public string DownloadUrl { get; }
+
+	public bool IsInstalled()
+	{
+		var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
+		return Directory.Exists(compilerPath) && Directory.GetFiles(compilerPath).Length >= 0;
+	}
+
+	public void Uninstall()
+	{
+		if (!IsInstalled())
+		{
+			return;
+		}
+
+		var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
+		Directory.Delete(compilerPath, true);
+	}
+}
+
+public class MSVCCompiler(string version, string downloadUrl) : ICompiler
+{
+	public string Platform { get; private set; } = "win32";
+	public string Version { get; private set; } = version;
+	public string DownloadUrl { get; private set; } = downloadUrl;
+}
+
 public class Compilers
 {
-	public interface ICompiler
-	{
-		public string Platform { get; }
-		public string Version { get; }
-		public string DownloadUrl { get; }
-
-		public bool IsInstalled()
-		{
-			var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
-			return Directory.Exists(compilerPath) && Directory.GetFiles(compilerPath).Length >= 0;
-		}
-
-		public void Uninstall()
-		{
-			if (!IsInstalled())
-			{
-				return;
-			}
-
-			var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
-			Directory.Delete(compilerPath, true);
-		}
-	}
-
-	public class MSVCCompiler(string version, string downloadUrl) : ICompiler
-	{
-		public string Platform { get; private set; } = "win32";
-		public string Version { get; private set; } = version;
-		public string DownloadUrl { get; private set; } = downloadUrl;
-	}
-
 	public static readonly List<MSVCCompiler> Win32Compilers = new List<MSVCCompiler>()
 	{
 		new MSVCCompiler("msvc4.0", "https://github.com/itsmattkc/MSVC400/archive/821e942fd95bd16d01649401de7943ef87ae9f54.zip"),

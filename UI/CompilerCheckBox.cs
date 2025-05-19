@@ -6,8 +6,8 @@ using DecompMeDesktop.Core.Compilers;
 
 public partial class CompilerCheckBox : CheckBox
 {
-	private Compilers.ICompiler _compiler;
-	public Compilers.ICompiler Compiler 
+	private ICompiler _compiler;
+	public ICompiler Compiler 
 	{ 
 		get
 		{
