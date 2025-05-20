@@ -8,7 +8,7 @@ namespace DecompMeDesktop.Core;
 
 public partial class DecompMeApi : Node
 {
-	public static DecompMeApi Instance;
+	public static DecompMeApi Instance {  get; private set; }
 
 #nullable enable
 
@@ -95,6 +95,13 @@ public partial class DecompMeApi : Node
 		public ScratchOwner? owner { get; set; }
 	}
 
+	public class Stats
+	{
+		public int? asm_count { get; set; }
+		public int? scratch_count { get; set; }
+		public int? github_user_count { get; set; }
+	}
+
 #nullable disable
 
 	public partial class ScratchListItemRequest : HttpRequest
@@ -129,6 +136,22 @@ public partial class DecompMeApi : Node
 		}
 	}
 
+	public partial class StatsRequest : HttpRequest
+	{
+		public Stats Data { get; private set; }
+		[Signal] public delegate void DataReceivedEventHandler();
+
+		public override void _Ready()
+		{
+			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+			{
+				string jsonStr = body.GetStringFromUtf8();
+				Data = JsonSerializer.Deserialize<Stats>(jsonStr);
+				EmitSignal(SignalName.DataReceived);
+			};
+		}
+	}
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -137,6 +160,7 @@ public partial class DecompMeApi : Node
 
 	public ScratchListRequest RequestScratchList(string search = "", int pageSize = 20)
 	{
+		VerifyPageSize(pageSize);
 		var httpRequest = new ScratchListRequest();
 		AddChild(httpRequest);
 		if (search != "")
@@ -153,6 +177,7 @@ public partial class DecompMeApi : Node
 
 	public ScratchListRequest RequestNextScratchList(string url, int pageSize = 20)
 	{
+		VerifyPageSize(pageSize);
 		var httpRequest = new ScratchListRequest();
 		AddChild(httpRequest);
 		httpRequest.Request($"{url}&page_size={pageSize}");
@@ -167,6 +192,13 @@ public partial class DecompMeApi : Node
 		return httpRequest;
 	}
 
+	public StatsRequest RequestStats()
+	{
+		var httpRequest = new StatsRequest();
+		AddChild(httpRequest);
+		httpRequest.Request("https://decomp.me/api/stats");
+		return httpRequest;
+	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
@@ -179,5 +211,13 @@ public partial class DecompMeApi : Node
 		AddChild(httpRequest);
 		httpRequest.Request($"https://decomp.me/api/scratch/{slug}/export");
 		return httpRequest;
+	}
+
+	private static void VerifyPageSize(int pageSize)
+	{
+		if (pageSize > 100)
+		{
+			GD.PushWarning($"Page size cannot be larger than 100");
+		}
 	}
 }

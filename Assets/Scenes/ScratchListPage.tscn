@@ -128,32 +128,32 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_constants/separation = 48
 
-[node name="Label3" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="ScratchCountLabel" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/line_spacing = -4
 theme_override_font_sizes/font_size = 18
-text = "159.963 scratches created"
+text = "0 scratches created"
 label_settings = SubResource("LabelSettings_1kaky")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Label4" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="GitHubUserCountLabel" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/line_spacing = -4
 theme_override_font_sizes/font_size = 18
-text = "2.225 users signed up"
+text = "0 users signed up"
 label_settings = SubResource("LabelSettings_gfxd6")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Label5" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="AsmCountLabel" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/line_spacing = -4
 theme_override_font_sizes/font_size = 18
-text = "143.178 asm globs submitted"
+text = "0 asm globs submitted"
 label_settings = SubResource("LabelSettings_qkawr")
 horizontal_alignment = 1
 vertical_alignment = 1

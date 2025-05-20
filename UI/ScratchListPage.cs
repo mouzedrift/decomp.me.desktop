@@ -1,5 +1,6 @@
 using Godot;
 using DecompMeDesktop.Core;
+using System.Globalization;
 
 namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node
@@ -8,24 +9,39 @@ public partial class ScratchListPage : Node
 
 	private VBoxContainer _scratchCardContainer;
 	private Button _showMoreButton;
+	private Label _scratchCountLabel;
+	private Label _githubUserCountLabel;
+	private Label _asmCountLabel;
 
 	private DecompMeApi.ScratchList _latestScratchList;
-	private DecompMeApi.ScratchListRequest _request;
+	private DecompMeApi.ScratchListRequest _scratchListRequest;
+	private DecompMeApi.StatsRequest _statsRequest;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer");
 		_showMoreButton = GetNode<Button>("ScrollContainer/VBoxContainer/ShowMoreButton");
+		_scratchCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/ScratchCountLabel");
+		_githubUserCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/GitHubUserCountLabel");
+		_asmCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/AsmCountLabel");
 
 		_showMoreButton.Visible = false;
 
-		_request = DecompMeApi.Instance.RequestScratchList();
-		_request.DataReceived += () =>
+		_scratchListRequest = DecompMeApi.Instance.RequestScratchList();
+		_scratchListRequest.DataReceived += () =>
 		{
-			Populate(_request.Data);
-			_request.QueueFree();
-			_request = null;
+			PopulateScratchCards(_scratchListRequest.Data);
+			_scratchListRequest.QueueFree();
+			_scratchListRequest = null;
+		};
+
+		_statsRequest = DecompMeApi.Instance.RequestStats();
+		_statsRequest.DataReceived += () =>
+		{
+			PopulateStats(_statsRequest.Data);
+			_statsRequest.QueueFree();
+			_statsRequest = null;
 		};
 
 		_showMoreButton.Pressed += NextPage;
@@ -38,10 +54,11 @@ public partial class ScratchListPage : Node
 
 	public override void _ExitTree()
 	{
-		_request?.CancelRequest();
+		_scratchListRequest?.CancelRequest();
+		_statsRequest?.CancelRequest();
 	}
 
-	private void Populate(DecompMeApi.ScratchList scratchList)
+	private void PopulateScratchCards(DecompMeApi.ScratchList scratchList)
 	{
 		foreach (var scratch in scratchList.results)
 		{
@@ -60,14 +77,21 @@ public partial class ScratchListPage : Node
 		_latestScratchList = scratchList;
 	}
 
+	private void PopulateStats(DecompMeApi.Stats stats)
+	{
+		_scratchCountLabel.Text = $"{stats.scratch_count:N0} scratches created";
+		_githubUserCountLabel.Text = $"{stats.github_user_count:N0} users signed up";
+		_asmCountLabel.Text = $"{stats.asm_count:N0} asm globs submitted";
+	}
+
 	private void NextPage()
 	{
-		_request = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
-		_request.DataReceived += () =>
+		_scratchListRequest = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
+		_scratchListRequest.DataReceived += () =>
 		{
-			Populate(_request.Data);
-			_request.QueueFree();
-			_request = null;
+			PopulateScratchCards(_scratchListRequest.Data);
+			_scratchListRequest.QueueFree();
+			_scratchListRequest = null;
 		};
 	}
 }
