@@ -1,6 +1,21 @@
-[gd_resource type="Theme" load_steps=12 format=3 uid="uid://di6i2be3ymow8"]
+[gd_resource type="Theme" load_steps=13 format=3 uid="uid://di6i2be3ymow8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3gkse"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.411765, 0.411765, 0.411765, 0.196078)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6fqvv"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
 bg_color = Color(0.6, 0.6, 0.6, 0)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2oxte"]
@@ -49,6 +64,8 @@ content_margin_right = 4.0
 content_margin_bottom = 4.0
 
 [resource]
+Button/font_sizes/font_size = 14
+Button/styles/hover = SubResource("StyleBoxFlat_3gkse")
 Button/styles/normal = SubResource("StyleBoxFlat_6fqvv")
 TabBar/styles/button_pressed = SubResource("StyleBoxFlat_2oxte")
 TabBar/styles/tab_focus = SubResource("StyleBoxEmpty_p3rhg")

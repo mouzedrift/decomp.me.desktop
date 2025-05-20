@@ -122,4 +122,9 @@ public class Utils
 		acceptDialog.Show();
 		return acceptDialog;
 	}
+
+	public static string ToWinePath(string windowsPath)
+	{
+		throw new NotImplementedException();
+	}
 }

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 using Environment = System.Environment;
@@ -226,17 +227,26 @@ public partial class ScratchPage : Control
 			return;
 		}
 
-		// directly executing cl.exe doesn't work for some reason
-		var psi = new ProcessStartInfo
+		var psi = new ProcessStartInfo()
 		{
-			FileName = "cmd.exe",
-			Arguments = $"/k {compiler.Command} code.c {_scratch.compiler_flags} & exit",
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			UseShellExecute = false,
 			CreateNoWindow = true,
 			WorkingDirectory = _scratchDir
 		};
+
+		// directly executing cl.exe doesn't work for some reason
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			psi.FileName = "cmd.exe";
+			psi.Arguments = $"/c {compiler.Command} code.c {_scratch.compiler_flags}";
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			psi.FileName = "wine";
+			psi.Arguments = $"cmd.exe /c {compiler.Command} code.c {_scratch.compiler_flags}";
+		}
 
 		compiler.UpdateEnvironment(psi.EnvironmentVariables);
 

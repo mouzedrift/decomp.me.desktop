@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace DecompMeDesktop.Core.Compilers;
 
@@ -40,7 +41,7 @@ public class MSVCCompiler(string version, string downloadUrl) : ICompiler
 	public string Version { get; private set; } = version;
 	public string DownloadUrl { get; private set; } = downloadUrl;
 	public string Command { get; set; } = "CL.EXE /nologo /c";
-
+	
 	public void UpdateEnvironment(StringDictionary env)
 	{
 		string binPath = Path.Combine(Globals.CompilersPath, Platform, Version, "Bin");

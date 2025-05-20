@@ -71,6 +71,7 @@ grow_vertical = 2
 script = ExtResource("1_6f47n")
 
 [node name="CompilerManagerWindow" parent="." instance=ExtResource("2_qn486")]
+visible = false
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
 layout_mode = 2
