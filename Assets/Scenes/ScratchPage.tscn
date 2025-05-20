@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://d14c2fslmupww"]
+[gd_scene load_steps=7 format=3 uid="uid://d14c2fslmupww"]
 
 [ext_resource type="Script" uid="uid://b7fbjpg5263yr" path="res://UI/ScratchPage.cs" id="1_pdha3"]
 [ext_resource type="Texture2D" uid="uid://dqjbtm21n2njc" path="res://icon.svg" id="1_xc6vo"]
 [ext_resource type="PackedScene" uid="uid://bpudcsy1w1nsi" path="res://Assets/Scenes/CppCodeEdit.tscn" id="2_40dmx"]
 [ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Assets/Scenes/NavigationHeader.tscn" id="2_typ7n"]
 [ext_resource type="PackedScene" uid="uid://ttvnatwkeuqv" path="res://Assets/Scenes/AsmDiffPanel.tscn" id="4_py4v6"]
+[ext_resource type="PackedScene" uid="uid://ekekip1v37gd" path="res://Assets/Scenes/CompilerOutputPanel.tscn" id="6_78rpb"]
 
 [node name="ScratchPage" type="Control"]
 layout_mode = 3
@@ -144,5 +145,13 @@ visible = false
 layout_mode = 2
 text = "Compilation 70 (99.83%)"
 
-[node name="AsmDiffWindow" parent="VBoxContainer/HSplitContainer/HBoxContainer" instance=ExtResource("4_py4v6")]
+[node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer/HSplitContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AsmDiffWindow" parent="VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer" instance=ExtResource("4_py4v6")]
+layout_mode = 2
+
+[node name="CompilerOutputPanel" parent="VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer" instance=ExtResource("6_78rpb")]
+layout_mode = 2
+size_flags_vertical = 3

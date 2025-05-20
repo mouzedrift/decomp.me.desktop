@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://ekekip1v37gd"]
+
+[ext_resource type="Script" uid="uid://dfis5a1wtcshp" path="res://UI/CompilerOutputPanel.cs" id="1_oprdf"]
+
+[node name="CompilerOutputPanel" type="TabContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 1
+script = ExtResource("1_oprdf")
+
+[node name="Errors" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ErrorsTextEdit" type="TextEdit" parent="Errors"]
+layout_mode = 2
+
+[node name="Compiler Output" type="MarginContainer" parent="."]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="CompilerOutputTextEdit" type="TextEdit" parent="Compiler Output"]
+layout_mode = 2
+theme_override_colors/font_readonly_color = Color(0.933333, 0.933333, 0.941176, 1)
+editable = false

@@ -23,14 +23,15 @@ public partial class ScratchPage : Control
 	private string _scratchDir;
 	private CppCodeEdit _ctxCodeEdit;
 	private CppCodeEdit _srcCodeEdit;
-
+	private CompilerOutputPanel _compilerOutputPanel;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/AsmDiffWindow");
+		_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
 		_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
 		_srcCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit");
+		_compilerOutputPanel = GetNode<CompilerOutputPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/CompilerOutputPanel");
 
 		_ctxCodeEdit.SaveRequested += SaveCode;
 		_srcCodeEdit.SaveRequested += SaveCode;
@@ -165,15 +166,28 @@ public partial class ScratchPage : Control
 		string sourceCode = File.ReadAllText(codeFilePath);
 		sourceCode = "#include \"ctx.c\"\n" + sourceCode;
 		File.WriteAllText(codeFilePath, sourceCode);
+
+		var json = await Globals.RunAsmDiffAsync(_scratch.name);
+		var diffs = Globals.ParseAsmDifferJson(json);
+
+		_asmDiffWindow.SetTargetText(diffs["base"]);
+		_asmDiffWindow.SetCurrentText(diffs["current"]);
 	}
 
 	private async Task Compile()
 	{
 		var compiler = Compilers.GetCompiler(_scratch.compiler);
+		if (compiler == null)
+		{
+			GD.Print($"Compiler {_scratch.compiler} is not installed!");
+			return;
+		}
+
+		// directly executing cl.exe doesn't work for some reason
 		var psi = new ProcessStartInfo
 		{
-			FileName = "C:\\Users\\mouzedrift\\AppData\\Roaming\\Godot\\app_userdata\\decomp.me.desktop\\compilers\\win32\\msvc6.4\\Bin\\CL.EXE",
-			Arguments = "/c code.c " + _scratch.compiler_flags,
+			FileName = "cmd.exe",
+			Arguments = $"/k CL.EXE /nologo /c code.c {_scratch.compiler_flags} & exit",
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			UseShellExecute = false,
@@ -182,10 +196,8 @@ public partial class ScratchPage : Control
 		};
 
 		compiler.UpdateEnvironment(psi.EnvironmentVariables);
-		GD.Print(psi.EnvironmentVariables["PATH"]);
 
 		var process = Process.Start(psi);
-
 		var stdoutTask = process.StandardOutput.ReadToEndAsync();
 		var stderrTask = process.StandardError.ReadToEndAsync();
 
@@ -193,9 +205,6 @@ public partial class ScratchPage : Control
 
 		string stdout = await stdoutTask;
 		string stderr = await stderrTask;
-
-		GD.Print("STDOUT:\n" + stdout);
-		GD.Print("STDERR:\n" + stderr);
 
 		if (process.ExitCode == 0)
 		{
@@ -209,5 +218,7 @@ public partial class ScratchPage : Control
 			_asmDiffWindow.SetTargetText(diffs["base"]);
 			_asmDiffWindow.SetCurrentText(diffs["current"]);
 		}
+
+		_compilerOutputPanel.SetCompilerOutput(stdout);
 	}
 }

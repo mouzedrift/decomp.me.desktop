@@ -29,6 +29,7 @@ public partial class CppCodeEdit : CodeEdit
 
 	private async void OnTextChanged()
 	{
+		/*
 		var line = GetCaretLine();
 		var column = GetCaretColumn();
 
@@ -98,6 +99,7 @@ public partial class CppCodeEdit : CodeEdit
 		}
 
 		UpdateCodeCompletionOptions(true);
+		*/
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
