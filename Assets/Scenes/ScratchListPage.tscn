@@ -1,8 +1,7 @@
-[gd_scene load_steps=12 format=3 uid="uid://dgrhdqs4p8wr3"]
+[gd_scene load_steps=11 format=3 uid="uid://dgrhdqs4p8wr3"]
 
 [ext_resource type="Script" uid="uid://cki3wrgxcjv7i" path="res://UI/ScratchListPage.cs" id="1_6f47n"]
 [ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Assets/Scenes/NavigationHeader.tscn" id="2_2vs54"]
-[ext_resource type="PackedScene" uid="uid://uqbucagyx7yy" path="res://Assets/Scenes/CompilerManagerWindow.tscn" id="2_qn486"]
 [ext_resource type="PackedScene" uid="uid://df7obofde6vc2" path="res://Assets/Scenes/PlatformsScroller.tscn" id="3_lfjmv"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_lfjmv"]
@@ -69,9 +68,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_6f47n")
-
-[node name="CompilerManagerWindow" parent="." instance=ExtResource("2_qn486")]
-visible = false
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
 layout_mode = 2

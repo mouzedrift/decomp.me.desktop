@@ -71,21 +71,25 @@ size_flags_horizontal = 3
 
 [node name="NewButton" type="Button" parent="VBoxContainer/Header/HBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
 text = "New"
 
 [node name="SaveButton" type="Button" parent="VBoxContainer/Header/HBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
 text = "Save"
 
 [node name="ForkButton" type="Button" parent="VBoxContainer/Header/HBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
 text = "Fork"
 
 [node name="CompileButton" type="Button" parent="VBoxContainer/Header/HBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
 text = "Compile"
 
@@ -96,6 +100,7 @@ size_flags_vertical = 3
 [node name="TabContainer" type="TabContainer" parent="VBoxContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
 current_tab = 2
 
 [node name="About" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/TabContainer"]

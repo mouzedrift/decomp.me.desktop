@@ -36,6 +36,11 @@ public partial class ScratchListPage : Node
 	{
 	}
 
+	public override void _ExitTree()
+	{
+		_request?.CancelRequest();
+	}
+
 	private void Populate(DecompMeApi.ScratchList scratchList)
 	{
 		foreach (var scratch in scratchList.results)

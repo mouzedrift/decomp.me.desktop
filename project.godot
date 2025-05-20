@@ -22,6 +22,7 @@ config/icon="uid://dwjidbg3gr5v1"
 DecompMeApi="*res://Core/DecompMeApi.cs"
 SceneManager="*res://Core/SceneManager.cs"
 Globals="*res://Core/Globals.cs"
+SettingsManager="*res://Core/SettingsManager.cs"
 
 [display]
 

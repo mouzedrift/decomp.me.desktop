@@ -14,7 +14,7 @@ namespace DecompMeDesktop.Core;
 
 public partial class Globals : Node
 {
-	public static Globals Instance;
+	public static Globals Instance { get; private set; }
 	public ILanguageClient LanguageClient { get; private set; }
 	public Process ClangdProcess { get; private set; }
 

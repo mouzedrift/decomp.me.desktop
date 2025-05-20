@@ -96,6 +96,11 @@ public partial class ScratchPage : Control
 		}
 	}
 
+	public override void _ExitTree()
+	{
+		_httpRequest?.CancelRequest();
+	}
+
 	public void Populate(DecompMeApi.ScratchListItem scratch)
 	{
 		_scratch = scratch;
@@ -132,6 +137,7 @@ public partial class ScratchPage : Control
 		_stopwatch.Stop();
 		GD.Print($"zip request + download took {_stopwatch.ElapsedMilliseconds}ms");
 		_httpRequest.QueueFree();
+		_httpRequest = null;
 
 		using var memoryStream = new MemoryStream(body);
 		using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);

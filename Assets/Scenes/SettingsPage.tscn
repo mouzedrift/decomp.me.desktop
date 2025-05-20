@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://dq8qy1aik7870"]
+
+[ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Assets/Scenes/NavigationHeader.tscn" id="1_e32ra"]
+[ext_resource type="Script" uid="uid://diwaifmb5iqll" path="res://UI/SettingsPage.cs" id="1_kfjlp"]
+
+[node name="SettingsPage" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_kfjlp")
+
+[node name="NavigationHeader" parent="." instance=ExtResource("1_e32ra")]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 240
+theme_override_constants/margin_right = 240
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="AccountButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+text = "Account"
+
+[node name="AppearanceButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+text = "Appearance"
+
+[node name="EditorButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+text = "Editor"
+
+[node name="CompilersButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+text = "Compilers"

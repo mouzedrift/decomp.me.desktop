@@ -113,6 +113,10 @@ public partial class CompilerManagerWindow : Window
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+		if (_lastRequest != null)
+		{
+			GD.Print($"{_lastRequest.GetDownloadedBytes()}/{_lastRequest.GetBodySize()}");
+		}
 	}
 
 	private void StartCompilerDownloads()
