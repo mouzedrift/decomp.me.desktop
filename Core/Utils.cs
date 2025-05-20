@@ -100,4 +100,26 @@ public class Utils
 			StringComparer.OrdinalIgnoreCase);
 		return headerDict;
 	}
+
+	public static ConfirmationDialog CreateConfirmationDialog(Node parent, string dialogText)
+	{
+		ConfirmationDialog confirmDialog = new ConfirmationDialog();
+		confirmDialog.GetLabel().HorizontalAlignment = HorizontalAlignment.Center;
+		confirmDialog.DialogText = dialogText;
+		parent.AddChild(confirmDialog);
+		confirmDialog.PopupCentered();
+		confirmDialog.Show();
+		return confirmDialog;
+	}
+
+	public static AcceptDialog CreateAcceptDialog(Node parent, string dialogText)
+	{
+		AcceptDialog acceptDialog = new AcceptDialog();
+		acceptDialog.GetLabel().HorizontalAlignment = HorizontalAlignment.Center;
+		acceptDialog.DialogText = dialogText;
+		parent.AddChild(acceptDialog);
+		acceptDialog.PopupCentered();
+		acceptDialog.Show();
+		return acceptDialog;
+	}
 }

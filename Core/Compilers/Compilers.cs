@@ -12,6 +12,7 @@ public interface ICompiler
 	public string Platform { get; }
 	public string Version { get; }
 	public string DownloadUrl { get; }
+	public string Command { get; set; }
 
 	public bool IsInstalled()
 	{
@@ -38,6 +39,7 @@ public class MSVCCompiler(string version, string downloadUrl) : ICompiler
 	public string Platform { get; private set; } = "win32";
 	public string Version { get; private set; } = version;
 	public string DownloadUrl { get; private set; } = downloadUrl;
+	public string Command { get; set; } = "CL.EXE /nologo /c";
 
 	public void UpdateEnvironment(StringDictionary env)
 	{

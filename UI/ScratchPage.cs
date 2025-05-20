@@ -24,28 +24,57 @@ public partial class ScratchPage : Control
 	private CppCodeEdit _ctxCodeEdit;
 	private CppCodeEdit _srcCodeEdit;
 	private CompilerOutputPanel _compilerOutputPanel;
+	private bool _compilerRunning = false;
+	private Button _newButton;
+	private Button _saveButton;
+	private Button _forkButton;
+	private Button _compileButton;
+	private Timer _recompileTimer;
 
 	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
+	public override async void _Ready()
 	{
 		_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
 		_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
 		_srcCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit");
 		_compilerOutputPanel = GetNode<CompilerOutputPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/CompilerOutputPanel");
+		_newButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/NewButton");
+		_saveButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/SaveButton");
+		_forkButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/ForkButton");
+		_compileButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/CompileButton");
+		_recompileTimer = GetNode<Timer>("RecompileTimer");
 
-		_ctxCodeEdit.SaveRequested += SaveCode;
-		_srcCodeEdit.SaveRequested += SaveCode;
+		_ctxCodeEdit.TextChanged += () =>
+		{
+			_recompileTimer.Start();
+		};
+		_srcCodeEdit.TextChanged += () =>
+		{
+			_recompileTimer.Start();
+		};
+
+		_saveButton.Pressed += SaveCode;
+		_compileButton.Pressed += async () =>
+		{
+			SaveCode();
+			await CompileAsync();
+		};
+
+		_recompileTimer.Timeout += async () =>
+		{
+			GD.Print("auto recompile triggered");
+			SaveCode();
+			await CompileAsync();
+		};
 	}
 
-	private async void SaveCode()
+	private void SaveCode()
 	{
-		File.WriteAllText(_scratchDir.PathJoin("ctx.c"), _ctxCodeEdit.Text);
-		string srcCode = "#include \"ctx.c\"\n" + _srcCodeEdit.Text;
-		File.WriteAllText(_scratchDir.PathJoin("code.c"), srcCode);
-
-		GD.Print("code saved!");
-
-		await Compile();
+		if (!_ctxCodeEdit.RequestSave(_scratchDir) &&
+			!_srcCodeEdit.RequestSave(_scratchDir))
+		{
+			return;
+		}
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -55,6 +84,15 @@ public partial class ScratchPage : Control
 
 	public override async void _Input(InputEvent @event)
 	{
+		if (Input.IsActionJustPressed("code_save"))
+		{
+			SaveCode();
+		}
+		else if (Input.IsActionJustPressed("code_compile"))
+		{
+			SaveCode();
+			await CompileAsync();
+		}
 	}
 
 	public void Populate(DecompMeApi.ScratchListItem scratch)
@@ -67,9 +105,9 @@ public partial class ScratchPage : Control
 			Directory.CreateDirectory(_scratchDir);
 		}
 
-		GetNode<Label>("VBoxContainer/Header/UsernameLabel").Text = scratch.GetOwnerName();
-		GetNode<Label>("VBoxContainer/Header/FunctionNameLabel").Text = scratch.name;
-		GetNode<Label>("VBoxContainer/Header/TimestampLabel").Text = scratch.GetLastUpdatedTime();
+		GetNode<Label>("VBoxContainer/Header/HBoxContainer/UsernameLabel").Text = scratch.GetOwnerName();
+		GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
+		GetNode<Label>("VBoxContainer/Header/HBoxContainer/TimestampLabel").Text = scratch.GetLastUpdatedTime();
 
 		string scoreStr = $"Score: {scratch.score} ({scratch.GetMatchPercentage()})";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
@@ -174,12 +212,17 @@ public partial class ScratchPage : Control
 		_asmDiffWindow.SetCurrentText(diffs["current"]);
 	}
 
-	private async Task Compile()
+	private async Task CompileAsync()
 	{
 		var compiler = Compilers.GetCompiler(_scratch.compiler);
 		if (compiler == null)
 		{
-			GD.Print($"Compiler {_scratch.compiler} is not installed!");
+			Utils.CreateAcceptDialog(this, $"Compiler {_scratch.compiler} is not installed!");
+			return;
+		}
+
+		if (_compilerRunning)
+		{
 			return;
 		}
 
@@ -187,7 +230,7 @@ public partial class ScratchPage : Control
 		var psi = new ProcessStartInfo
 		{
 			FileName = "cmd.exe",
-			Arguments = $"/k CL.EXE /nologo /c code.c {_scratch.compiler_flags} & exit",
+			Arguments = $"/k {compiler.Command} code.c {_scratch.compiler_flags} & exit",
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			UseShellExecute = false,
@@ -196,6 +239,8 @@ public partial class ScratchPage : Control
 		};
 
 		compiler.UpdateEnvironment(psi.EnvironmentVariables);
+
+		_compilerRunning = true;
 
 		var process = Process.Start(psi);
 		var stdoutTask = process.StandardOutput.ReadToEndAsync();
@@ -220,5 +265,6 @@ public partial class ScratchPage : Control
 		}
 
 		_compilerOutputPanel.SetCompilerOutput(stdout);
+		_compilerRunning = false;
 	}
 }

@@ -1,4 +1,7 @@
-[gd_resource type="Theme" load_steps=11 format=3 uid="uid://di6i2be3ymow8"]
+[gd_resource type="Theme" load_steps=12 format=3 uid="uid://di6i2be3ymow8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6fqvv"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2oxte"]
 bg_color = Color(0.510045, 0.64193, 0.507931, 1)
@@ -46,6 +49,7 @@ content_margin_right = 4.0
 content_margin_bottom = 4.0
 
 [resource]
+Button/styles/normal = SubResource("StyleBoxFlat_6fqvv")
 TabBar/styles/button_pressed = SubResource("StyleBoxFlat_2oxte")
 TabBar/styles/tab_focus = SubResource("StyleBoxEmpty_p3rhg")
 TabBar/styles/tab_hovered = null

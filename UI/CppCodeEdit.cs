@@ -3,16 +3,30 @@ using DecompMeDesktop.Core.CodeEditor;
 using Godot;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using System.IO;
 
 namespace DecompMeDesktop.UI;
 
 public partial class CppCodeEdit : CodeEdit
 {
-	[Signal] public delegate void SaveRequestedEventHandler();
+	private string _savedText;
+	public enum CodeType
+	{
+		None,
+		Context,
+		Source
+	}
+	[Export] private CodeType _codeType;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		if (_codeType == CodeType.None)
+		{
+			GD.PushError($"CppCodeEdit type can't be set to none!");
+		}
+
+		_savedText = Text;
 		//AsmDiffer.CheckAllDependenciesAsync();
 
 		SyntaxHighlighter = new CppHighlighter();
@@ -113,9 +127,34 @@ public partial class CppCodeEdit : CodeEdit
 		//{
 		//	EmitSignalCodeCompletionRequested();
 		//}
-		if (Input.IsActionJustPressed("code_save"))
+	}
+
+	public bool RequestSave(string scratchDir)
+	{
+		if (!IsDirty())
 		{
-			EmitSignal(SignalName.SaveRequested);
+			return false;
 		}
+
+		_savedText = Text;
+		if (_codeType == CodeType.Context)
+		{
+			File.WriteAllText(scratchDir.PathJoin("ctx.c"), Text);
+			return true;
+
+		}
+		else if (_codeType == CodeType.Source)
+		{
+			string srcCode = "#include \"ctx.c\"\n" + Text;
+			File.WriteAllText(scratchDir.PathJoin("code.c"), srcCode);
+			return true;
+		}
+
+		return false;
+	}
+
+	public bool IsDirty()
+	{
+		return _savedText != Text;
 	}
 }

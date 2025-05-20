@@ -94,12 +94,7 @@ public partial class CompilerManagerWindow : Window
 			dialogText += "Uninstalling:\n" + uninstallCompilers;
 		}
 
-		ConfirmationDialog confirmDialog = new ConfirmationDialog();
-		confirmDialog.GetLabel().HorizontalAlignment = HorizontalAlignment.Center;
-		confirmDialog.DialogText = dialogText;
-		AddChild(confirmDialog);
-		confirmDialog.PopupCentered();
-		confirmDialog.Show();
+		var confirmDialog = Utils.CreateConfirmationDialog(this, dialogText);
 
 		confirmDialog.Confirmed += () =>
 		{
@@ -163,12 +158,7 @@ public partial class CompilerManagerWindow : Window
 		_compilersToInstall.RemoveAt(0);
 		if (_compilersToInstall.Count <= 0)
 		{
-			AcceptDialog acceptDialog = new AcceptDialog();
-			acceptDialog.GetLabel().HorizontalAlignment = HorizontalAlignment.Center;
-			acceptDialog.DialogText = $"All compilers have been installed/uninstalled successfully.";
-			AddChild(acceptDialog);
-			acceptDialog.PopupCentered();
-			acceptDialog.Show();
+			Utils.CreateAcceptDialog(this, $"All compilers have been installed/uninstalled successfully.");
 			return;
 		}
 
