@@ -9,6 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 using Environment = System.Environment;
@@ -29,8 +30,10 @@ public partial class ScratchPage : Control
 	private Button _newButton;
 	private Button _saveButton;
 	private Button _forkButton;
+	private Button _deleteButton;
 	private Button _compileButton;
 	private Timer _recompileTimer;
+	private HttpRequest _forkRequest;
 
 	// Called when the node enters the scene tree for the first time.
 	public override async void _Ready()
@@ -42,6 +45,7 @@ public partial class ScratchPage : Control
 		_newButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/NewButton");
 		_saveButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/SaveButton");
 		_forkButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/ForkButton");
+		_deleteButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/DeleteButton");
 		_compileButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/CompileButton");
 		_recompileTimer = GetNode<Timer>("RecompileTimer");
 
@@ -67,14 +71,29 @@ public partial class ScratchPage : Control
 			SaveCode();
 			await CompileAsync();
 		};
+
+		_forkButton.Pressed += () =>
+		{
+			var forkRequest = DecompMeApi.Instance.ForkScratch(_scratch);
+			forkRequest.DataReceived += () => forkRequest.QueueFree();
+		};
+
+		_deleteButton.Pressed += () =>
+		{
+			DecompMeApi.Instance.DeleteScratch(_scratch);
+		};
 	}
 
 	private void SaveCode()
 	{
-		if (!_ctxCodeEdit.RequestSave(_scratchDir) &&
-			!_srcCodeEdit.RequestSave(_scratchDir))
+		if (_ctxCodeEdit.RequestSave(_scratchDir))
 		{
-			return;
+			_scratch.context = _ctxCodeEdit.Text;
+		}
+
+		if (_srcCodeEdit.RequestSave(_scratchDir))
+		{
+			_scratch.source_code = _srcCodeEdit.Text;
 		}
 	}
 
@@ -113,7 +132,7 @@ public partial class ScratchPage : Control
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/TimestampLabel").Text = scratch.GetLastUpdatedTime();
 
-		string scoreStr = $"Score: {scratch.score} ({scratch.GetMatchPercentage()})";
+		string scoreStr = $"Score: {scratch.score} ({Utils.GetMatchPercentage(_scratch.score, _scratch.max_score)})";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {scratch.GetOwnerName()}";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ForkOfTextLabel2").Text = $"Fork of: {scratch.parent}"; // TODO
@@ -216,6 +235,7 @@ public partial class ScratchPage : Control
 
 		_asmDiffWindow.SetTargetText(diffs["base"]);
 		_asmDiffWindow.SetCurrentText(diffs["current"]);
+		_asmDiffWindow.SetScore(_scratch.score.Value, _scratch.max_score.Value);
 	}
 
 	private async Task CompileAsync()
@@ -269,14 +289,17 @@ public partial class ScratchPage : Control
 		if (process.ExitCode == 0)
 		{
 			string src = _scratchDir.PathJoin("code.obj");
-			string dst = AppDirs.Bin.PathJoin("obj.o");
+			string dst = ProjectSettings.GlobalizePath(AppDirs.Bin.PathJoin("obj.o"));
 			File.Copy(src, dst, true);
 
 			var json = await Globals.RunAsmDiffAsync(_scratch.name);
 			var diffs = Globals.ParseAsmDifferJson(json);
 
+			File.WriteAllText("C:\\Users\\mouzedrift\\AppData\\Roaming\\Godot\\app_userdata\\decomp.me.desktop\\test.json", json);
+			var root = JsonDocument.Parse(json).RootElement;
 			_asmDiffWindow.SetTargetText(diffs["base"]);
 			_asmDiffWindow.SetCurrentText(diffs["current"]);
+			_asmDiffWindow.SetScore(root.GetProperty("current_score").GetInt32(), root.GetProperty("max_score").GetInt32());
 		}
 
 		_compilerOutputPanel.SetCompilerOutput(stdout);

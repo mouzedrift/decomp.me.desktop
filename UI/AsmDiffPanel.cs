@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using DecompMeDesktop.Core.CodeEditor;
+using DecompMeDesktop.Core;
 
 namespace DecompMeDesktop.UI;
 
@@ -8,6 +9,7 @@ public partial class AsmDiffPanel : HSplitContainer
 {
 	[Export] private TextEdit _targetEdit;
 	[Export] private TextEdit _currentEdit;
+	[Export] private RichTextLabel _richTextLabel;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -55,5 +57,12 @@ public partial class AsmDiffPanel : HSplitContainer
 	{
 		_targetEdit.Text = string.Empty;
 		_currentEdit.Text = string.Empty;
+	}
+
+	public void SetScore(int score, int maxScore)
+	{
+		var missingScore = maxScore - score;
+		_richTextLabel.Text = $"[b]Compilation[/b] {missingScore} ({Utils.GetMatchPercentage(score, maxScore)})";
+		_richTextLabel.TooltipText = $"{score}/{maxScore}";
 	}
 }

@@ -17,8 +17,8 @@ public interface ICompiler
 
 	public bool IsInstalled()
 	{
-
-		var compilerPath = Path.Combine(AppDirs.Compilers, Platform, Version);
+		var globalCompilersPath = ProjectSettings.GlobalizePath(AppDirs.Compilers);
+		var compilerPath = Path.Combine(globalCompilersPath, Platform, Version);
 		return Directory.Exists(compilerPath) && Directory.GetFiles(compilerPath).Length >= 0;
 	}
 
@@ -29,7 +29,8 @@ public interface ICompiler
 			return;
 		}
 
-		var compilerPath = Path.Combine(AppDirs.Compilers, Platform, Version);
+		var globalCompilersPath = ProjectSettings.GlobalizePath(AppDirs.Compilers);
+		var compilerPath = Path.Combine(globalCompilersPath, Platform, Version);
 		Directory.Delete(compilerPath, true);
 	}
 

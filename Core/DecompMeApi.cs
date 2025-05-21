@@ -1,11 +1,9 @@
 using Godot;
-using OmniSharp.Extensions.JsonRpc;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
-using static DecompMeDesktop.Core.DecompMeApi;
-using static System.Net.WebRequestMethods;
 
 namespace DecompMeDesktop.Core;
 
@@ -38,20 +36,14 @@ public partial class DecompMeApi : Node
 		public string? compiler { get; set; }
 		public string? compiler_flags { get; set; }
 		public int? preset { get; set; }
+		public string? claim_token { get; set; }
 		public string? name { get; set; }
 		public string? description { get; set; }
-
 		public int? score { get; set; }
 		public int? max_score { get; set; }
 		public bool? match_override { get; set; }
 		public string? parent { get; set; }
 		public List<string>? libraries { get; set; }
-
-		public string GetMatchPercentage()
-		{
-			float? percentage = 100f - ((float)score / max_score) * 100f;
-			return $"{percentage:0.00}%";
-		}
 
 		public string GetCreationTime()
 		{
@@ -110,6 +102,41 @@ public partial class DecompMeApi : Node
 
 #nullable disable
 
+	public static string[] AddCookie(string[] customHeaders)
+	{
+		if (SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
+		{
+			var sessionId = SettingsManager.Instance.GetValue("Cookie", "session_id").AsString();
+			var cookieHeader = $"Cookie: sessionid={sessionId}";
+			if (customHeaders != null)
+			{
+				customHeaders = customHeaders.Append(cookieHeader).ToArray();
+			}
+			else
+			{
+				customHeaders = [cookieHeader];
+			}
+		}
+
+		return customHeaders;
+	}
+
+	public static void SaveCookie(string[] headers)
+	{
+		foreach (var header in headers)
+		{
+			if (header.StartsWith("Set-Cookie:"))
+			{
+				var sessionId = header.Split(';')[0].Split('=')[1];
+				if (!SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
+				{
+					SettingsManager.Instance.SetValue("Cookie", "session_id", sessionId);
+					SettingsManager.Instance.Save();
+				}
+			}
+		}
+	}
+
 	public partial class JsonRequest<T> : HttpRequest
 	{
 		public T Data { get; private set; }
@@ -122,39 +149,15 @@ public partial class DecompMeApi : Node
 				string jsonStr = body.GetStringFromUtf8();
 				Data = JsonSerializer.Deserialize<T>(jsonStr);
 
-				foreach (var header in headers)
-				{
-					if (header.StartsWith("Set-Cookie:"))
-					{
-						var sessionId = header.Split(';')[0].Split('=')[1];
-						if (!SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
-						{
-							SettingsManager.Instance.SetValue("Cookie", "session_id", sessionId);
-							SettingsManager.Instance.Save();
-						}
-					}
-				}
+				SaveCookie(headers);
 
 				EmitSignal(SignalName.DataReceived);
 			};
 		}
 
-		public new Error Request(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
+		public new Godot.Error Request(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
 		{
-			if (SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
-			{
-				var sessionId = SettingsManager.Instance.GetValue("Cookie", "session_id").AsString();
-				var cookieHeader = $"Cookie: sessionid={sessionId}";
-				if (customHeaders != null)
-				{
-					customHeaders = customHeaders.Append(cookieHeader).ToArray();
-				}
-				else
-				{
-					customHeaders = [cookieHeader];
-				}
-			}
-
+			customHeaders = AddCookie(customHeaders);
 			return base.Request(url, customHeaders, method, requestData);
 		}
 	}
@@ -214,6 +217,63 @@ public partial class DecompMeApi : Node
 		AddChild(httpRequest);
 		httpRequest.Request($"{ApiUrl}/user");
 		return httpRequest;
+	}
+
+	public JsonRequest<ScratchList> RequestUserScratches(User user, int pageSize = DefaultPageSize)
+	{
+		var httpRequest = new JsonRequest<ScratchList>();
+		AddChild(httpRequest);
+		
+		if (!user.is_anonymous.GetValueOrDefault() && user.github_id != null)
+		{
+			httpRequest.Request($"{ApiUrl}/users/{user.username}/scratches?page_size={pageSize}&ordering=-creation_time");
+		}
+		else
+		{
+			httpRequest.Request($"{ApiUrl}/user/scratches?page_size={pageSize}&ordering=-creation_time");
+		}
+
+		return httpRequest;
+	}
+
+	public JsonRequest<ScratchListItem> ForkScratch(ScratchListItem scratch)
+	{
+		var httpRequest = new JsonRequest<ScratchListItem>();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/fork", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
+		httpRequest.DataReceived += () => ClaimScratch(httpRequest.Data);
+		return httpRequest;
+	}
+
+	public void ClaimScratch(ScratchListItem scratch)
+	{
+		if (scratch.claim_token == null || scratch.slug == null)
+		{
+			GD.PrintErr("Cannot claim scratch!");
+			return;
+		}
+
+		var httpRequest = new HttpRequest();
+		AddChild(httpRequest);
+		var claimJson = JsonSerializer.Serialize(new { token = scratch.claim_token });
+		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/claim", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Post, claimJson);
+		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+		{
+			SaveCookie(headers);
+			httpRequest.QueueFree();
+		};
+	}
+
+	public void DeleteScratch(ScratchListItem scratch)
+	{
+		var httpRequest = new HttpRequest();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Delete);
+		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+		{
+			SaveCookie(headers);
+			httpRequest.QueueFree();
+		};
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

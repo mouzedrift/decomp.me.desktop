@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace DecompMeDesktop.Core;
 
@@ -184,5 +185,11 @@ public class Utils
 		}
 
 		return "";
+	}
+
+	public static string GetMatchPercentage(int? score, int? maxScore)
+	{
+		float? percentage = 100f - ((float)score / maxScore) * 100f;
+		return $"{percentage:0.00}%";
 	}
 }

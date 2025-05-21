@@ -12,10 +12,13 @@ public partial class ScratchListPage : Node
 	private Label _githubUserCountLabel;
 	private Label _asmCountLabel;
 	private Timer _statsUpdateTimer;
+	private VBoxContainer _yourScratchesHBox;
 
 	private DecompMeApi.ScratchList _latestScratchList;
 	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _scratchListRequest;
 	private DecompMeApi.JsonRequest<DecompMeApi.Stats> _statsRequest;
+	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _yourScratchesRequest;
+	private DecompMeApi.JsonRequest<DecompMeApi.User> _userRequest;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -26,6 +29,7 @@ public partial class ScratchListPage : Node
 		_githubUserCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/GitHubUserCountLabel");
 		_asmCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/AsmCountLabel");
 		_statsUpdateTimer = GetNode<Timer>("StatsUpdateTimer");
+		_yourScratchesHBox = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/YourScratches");
 
 		_showMoreButton.Visible = false;
 
@@ -35,6 +39,32 @@ public partial class ScratchListPage : Node
 			PopulateScratchCards(_scratchListRequest.Data);
 			_scratchListRequest.QueueFree();
 			_scratchListRequest = null;
+		};
+
+		_userRequest = DecompMeApi.Instance.RequestUser();
+		_userRequest.DataReceived += () =>
+		{
+			_yourScratchesRequest = DecompMeApi.Instance.RequestUserScratches(_userRequest.Data);
+			GD.Print(_userRequest.Data.username);
+			_yourScratchesRequest.DataReceived += () =>
+			{
+				foreach (var scratch in _yourScratchesRequest.Data.results)
+				{
+					var hbox = new HBoxContainer();
+					hbox.SizeFlagsHorizontal = Control.SizeFlags.Fill;
+					hbox.SizeFlagsVertical = Control.SizeFlags.Fill;
+					_yourScratchesHBox.AddChild(hbox);
+
+					var functionLabel = new Label();
+					functionLabel.Text = scratch.name;
+					hbox.AddChild(functionLabel);
+
+					var matchPercentageLabel = new Label();
+					matchPercentageLabel.Text = Utils.GetMatchPercentage(scratch.score, scratch.max_score);
+					hbox.AddChild(matchPercentageLabel);
+				}
+			};
+
 		};
 
 		RequestStats();
@@ -52,6 +82,8 @@ public partial class ScratchListPage : Node
 	{
 		_scratchListRequest?.CancelRequest();
 		_statsRequest?.CancelRequest();
+		_userRequest?.CancelRequest();
+		_yourScratchesRequest?.CancelRequest();
 	}
 
 	private void PopulateScratchCards(DecompMeApi.ScratchList scratchList)
@@ -63,7 +95,7 @@ public partial class ScratchListPage : Node
 			card.SetPresetName(scratch.preset.ToString()); // TODO
 			card.SetUsername(scratch.GetOwnerName());
 			card.SetTimestamp(scratch.last_updated);
-			card.SetMatchPercentage(scratch.GetMatchPercentage());
+			card.SetMatchPercentage(Utils.GetMatchPercentage(scratch.score, scratch.max_score));
 
 			_scratchCardContainer.AddChild(card);
 		}

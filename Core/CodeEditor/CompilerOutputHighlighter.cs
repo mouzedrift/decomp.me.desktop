@@ -21,7 +21,7 @@ public partial class CompilerOutputHighlighter : SyntaxHighlighter
 		{
 			ColorRange(0, lineEnd, Color.FromHtml("#C82829"), ref dict);
 		}
-		else if (lineStr.Contains(") : error"))
+		else if (lineStr.Contains(") : warning"))
 		{
 			ColorRange(0, lineEnd, Colors.Yellow, ref dict);
 		}
