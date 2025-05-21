@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="decomp.me.desktop"
-run/main_scene="uid://dgrhdqs4p8wr3"
+run/main_scene="uid://cclumsm16pc5d"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 run/low_processor_mode=true
 boot_splash/bg_color=Color(0.0980392, 0.0901961, 0.0980392, 1)
@@ -27,6 +27,7 @@ SettingsManager="*res://Core/SettingsManager.cs"
 [display]
 
 window/subwindows/embed_subwindows=false
+window/per_pixel_transparency/allowed=true
 
 [dotnet]
 

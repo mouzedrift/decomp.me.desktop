@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=14 format=3 uid="uid://di6i2be3ymow8"]
+[gd_resource type="Theme" load_steps=16 format=3 uid="uid://di6i2be3ymow8"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6fqvv"]
 
@@ -19,6 +19,12 @@ content_margin_top = 4.0
 content_margin_right = 4.0
 content_margin_bottom = 4.0
 bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o6f8r"]
+bg_color = Color(0.176471, 0.176471, 0.176471, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m3ukb"]
+bg_color = Color(0.639216, 0.309804, 0.945098, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2oxte"]
 bg_color = Color(0.510045, 0.64193, 0.507931, 1)
@@ -70,6 +76,8 @@ Button/font_sizes/font_size = 14
 Button/styles/focus = SubResource("StyleBoxEmpty_6fqvv")
 Button/styles/hover = SubResource("StyleBoxFlat_3gkse")
 Button/styles/normal = SubResource("StyleBoxFlat_6fqvv")
+ProgressBar/styles/background = SubResource("StyleBoxFlat_o6f8r")
+ProgressBar/styles/fill = SubResource("StyleBoxFlat_m3ukb")
 TabBar/styles/button_pressed = SubResource("StyleBoxFlat_2oxte")
 TabBar/styles/tab_focus = SubResource("StyleBoxEmpty_p3rhg")
 TabBar/styles/tab_hovered = null

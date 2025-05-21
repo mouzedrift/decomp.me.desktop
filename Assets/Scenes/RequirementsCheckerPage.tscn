@@ -1,0 +1,34 @@
+[gd_scene load_steps=3 format=3 uid="uid://cclumsm16pc5d"]
+
+[ext_resource type="Script" uid="uid://dhgfgcid1uc1i" path="res://UI/RequirementsCheckerPage.cs" id="1_tsf71"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_0hpfb"]
+line_spacing = -24.0
+font_size = 56
+outline_size = 6
+
+[node name="RequirementsCheckerPage" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 240
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 240
+theme_override_constants/margin_bottom = 24
+script = ExtResource("1_tsf71")
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer2"]
+layout_mode = 2
+text = "decomp.me.desktop"
+label_settings = SubResource("LabelSettings_0hpfb")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer2"]
+layout_mode = 2
+size_flags_vertical = 3

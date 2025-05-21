@@ -1,9 +1,11 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 
 namespace DecompMeDesktop.Core;
 
@@ -110,5 +112,77 @@ public class Utils
 	public static string ToWinePath(string windowsPath)
 	{
 		throw new NotImplementedException();
+	}
+
+	public static Process StartProcess(string fileName, string args = "", string workingDirectory = "")
+	{
+		try
+		{
+			var psi = new ProcessStartInfo
+			{
+				FileName = fileName,
+				Arguments = args,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				WorkingDirectory = workingDirectory
+			};
+
+			return Process.Start(psi);
+		}
+		catch
+		{
+		}
+
+		return null;
+	}
+
+	public static string ToWslPath(string windowsPath)
+	{
+		windowsPath = Path.GetFullPath(windowsPath);
+
+		char driveLetter = char.ToLower(windowsPath[0]);
+		if (windowsPath[1] != ':' || windowsPath[2] != '\\')
+		{
+			GD.PrintErr("Invalid Windows path format.");
+			return windowsPath;
+		}
+
+		string pathWithoutDrive = windowsPath.Substring(2).Replace('\\', '/');
+
+		return $"/mnt/{driveLetter}{pathWithoutDrive}";
+	}
+
+	public static string GetPython3Path()
+	{
+		var globalPythonVenv = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
+		var python3Path = Path.Join(globalPythonVenv, "bin", "python3");
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			return ToWslPath(python3Path);
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			return python3Path;
+		}
+
+		return "";
+	}
+
+	public static string GetPip3Path()
+	{
+		var globalPythonVenv = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
+		var python3Path = Path.Join(globalPythonVenv, "bin", "pip3");
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			return ToWslPath(python3Path);
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			return python3Path;
+		}
+
+		return "";
 	}
 }

@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://coqxme8u46wvb"]
+
+[ext_resource type="Texture2D" uid="uid://qhubu8k8d4n0" path="res://Assets/Images/check.png" id="1_j2620"]
+[ext_resource type="Script" uid="uid://co5cxi582m2do" path="res://UI/TaskProgressBar.cs" id="1_x38a5"]
+
+[node name="TaskProgressBar" type="HBoxContainer"]
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_x38a5")
+
+[node name="TaskLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Some task"
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+custom_minimum_size = Vector2(240, 10)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+show_percentage = false
+
+[node name="CheckTextureRect" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+texture = ExtResource("1_j2620")
+expand_mode = 1
+stretch_mode = 5
