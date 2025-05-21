@@ -8,6 +8,7 @@ public partial class NavigationHeader : Node
 {
 	private Button _newScratchButton;
 	private Button _settingsButton;
+	private Button _userButton;
 
 	private readonly PackedScene SettingsPage = ResourceLoader.Load<PackedScene>("uid://dq8qy1aik7870");
 
@@ -16,6 +17,12 @@ public partial class NavigationHeader : Node
 	{
 		_newScratchButton = GetNode<Button>("HBoxContainer/HBoxContainer2/NewScratchButton");
 		_settingsButton = GetNode<Button>("HBoxContainer/HBoxContainer2/SettingsButton");
+		_userButton = GetNode<Button>("HBoxContainer/HBoxContainer2/UserButton");
+
+		_userButton.Pressed += () =>
+		{
+
+		};
 
 		_settingsButton.Pressed += () => SceneManager.Instance.ChangeScene(SettingsPage.Instantiate());
 	}

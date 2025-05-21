@@ -2,7 +2,9 @@ using Godot;
 using OmniSharp.Extensions.JsonRpc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
+using static DecompMeDesktop.Core.DecompMeApi;
 using static System.Net.WebRequestMethods;
 
 namespace DecompMeDesktop.Core;
@@ -11,6 +13,8 @@ public partial class DecompMeApi : Node
 {
 	public static DecompMeApi Instance {  get; private set; }
 	public const string ApiUrl = "https://decomp.me/api";
+	public const int DefaultPageSize = 20;
+	public const int MaxPageSize = 100;
 
 #nullable enable
 
@@ -24,7 +28,7 @@ public partial class DecompMeApi : Node
 	public class ScratchListItem
 	{
 		public string? slug { get; set; }
-		public ScratchOwner? owner { get; set; }
+		public User? owner { get; set; }
 		public string? source_code { get; set; }
 		public string? context { get; set; }
 		public string? language { get; set; }
@@ -67,7 +71,7 @@ public partial class DecompMeApi : Node
 		}
 	}
 
-	public class ScratchOwner
+	public class User
 	{
 		public bool? is_anonymous { get; set; }
 		public int? id { get; set; }
@@ -94,7 +98,7 @@ public partial class DecompMeApi : Node
 		public string? decompiler_flags { get; set; }
 		public List<string>? libraries { get; set; } // TODO: type not confirmed 
 		public int? num_scratches { get; set; }
-		public ScratchOwner? owner { get; set; }
+		public User? owner { get; set; }
 	}
 
 	public class Stats
@@ -106,9 +110,9 @@ public partial class DecompMeApi : Node
 
 #nullable disable
 
-	public partial class ScratchListItemRequest : HttpRequest
+	public partial class JsonRequest<T> : HttpRequest
 	{
-		public ScratchListItem Data { get; private set; }
+		public T Data { get; private set; }
 		[Signal] public delegate void DataReceivedEventHandler();
 
 		public override void _Ready()
@@ -116,41 +120,42 @@ public partial class DecompMeApi : Node
 			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
 			{
 				string jsonStr = body.GetStringFromUtf8();
-				Data = JsonSerializer.Deserialize<ScratchListItem>(jsonStr);
+				Data = JsonSerializer.Deserialize<T>(jsonStr);
+
+				foreach (var header in headers)
+				{
+					if (header.StartsWith("Set-Cookie:"))
+					{
+						var sessionId = header.Split(';')[0].Split('=')[1];
+						if (!SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
+						{
+							SettingsManager.Instance.SetValue("Cookie", "session_id", sessionId);
+							SettingsManager.Instance.Save();
+						}
+					}
+				}
+
 				EmitSignal(SignalName.DataReceived);
 			};
 		}
-	}
 
-	public partial class ScratchListRequest : HttpRequest
-	{
-		public ScratchList Data { get; private set; }
-		[Signal] public delegate void DataReceivedEventHandler();
-
-		public override void _Ready()
+		public new Error Request(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
 		{
-			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+			if (SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
 			{
-				string jsonStr = body.GetStringFromUtf8();
-				Data = JsonSerializer.Deserialize<ScratchList>(jsonStr);
-				EmitSignal(SignalName.DataReceived);
-			};
-		}
-	}
+				var sessionId = SettingsManager.Instance.GetValue("Cookie", "session_id").AsString();
+				var cookieHeader = $"Cookie: sessionid={sessionId}";
+				if (customHeaders != null)
+				{
+					customHeaders = customHeaders.Append(cookieHeader).ToArray();
+				}
+				else
+				{
+					customHeaders = [cookieHeader];
+				}
+			}
 
-	public partial class StatsRequest : HttpRequest
-	{
-		public Stats Data { get; private set; }
-		[Signal] public delegate void DataReceivedEventHandler();
-
-		public override void _Ready()
-		{
-			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
-			{
-				string jsonStr = body.GetStringFromUtf8();
-				Data = JsonSerializer.Deserialize<Stats>(jsonStr);
-				EmitSignal(SignalName.DataReceived);
-			};
+			return base.Request(url, customHeaders, method, requestData);
 		}
 	}
 
@@ -160,10 +165,10 @@ public partial class DecompMeApi : Node
 		Instance = this;
 	}
 
-	public ScratchListRequest RequestScratchList(string search = "", int pageSize = 20)
+	public JsonRequest<ScratchList> RequestScratchList(string search = "", int pageSize = DefaultPageSize)
 	{
 		VerifyPageSize(pageSize);
-		var httpRequest = new ScratchListRequest();
+		var httpRequest = new JsonRequest<ScratchList>();
 		AddChild(httpRequest);
 
 		string requestStr = $"{ApiUrl}/scratch?";
@@ -178,28 +183,36 @@ public partial class DecompMeApi : Node
 		return httpRequest;
 	}
 
-	public ScratchListRequest RequestNextScratchList(string url, int pageSize = 20)
+	public JsonRequest<ScratchList> RequestNextScratchList(string url, int pageSize = DefaultPageSize)
 	{
 		VerifyPageSize(pageSize);
-		var httpRequest = new ScratchListRequest();
+		var httpRequest = new JsonRequest<ScratchList>();
 		AddChild(httpRequest);
 		httpRequest.Request($"{url}&page_size={pageSize}");
 		return httpRequest;
 	}
 
-	public ScratchListItemRequest RequestScratch(string url)
+	public JsonRequest<ScratchListItem> RequestScratch(string url)
 	{
-		var httpRequest = new ScratchListItemRequest();
+		var httpRequest = new JsonRequest<ScratchListItem>();
 		AddChild(httpRequest);
 		httpRequest.Request(url);
 		return httpRequest;
 	}
 
-	public StatsRequest RequestStats()
+	public JsonRequest<Stats> RequestStats()
 	{
-		var httpRequest = new StatsRequest();
+		var httpRequest = new JsonRequest<Stats>();
 		AddChild(httpRequest);
 		httpRequest.Request($"{ApiUrl}/stats");
+		return httpRequest;
+	}
+
+	public JsonRequest<User> RequestUser()
+	{
+		var httpRequest = new JsonRequest<User>();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/user");
 		return httpRequest;
 	}
 
@@ -218,9 +231,9 @@ public partial class DecompMeApi : Node
 
 	private static void VerifyPageSize(int pageSize)
 	{
-		if (pageSize > 100)
+		if (pageSize > MaxPageSize)
 		{
-			GD.PushWarning($"Page size cannot be larger than 100");
+			GD.PushWarning($"Page size cannot be larger than {MaxPageSize}");
 		}
 	}
 }

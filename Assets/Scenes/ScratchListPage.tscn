@@ -158,10 +158,37 @@ label_settings = SubResource("LabelSettings_qkawr")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ShowMoreButton" type="Button" parent="ScrollContainer/VBoxContainer"]
+[node name="MarginContainer2" type="MarginContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 120
+theme_override_constants/margin_top = 64
+theme_override_constants/margin_right = 120
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="YourScratches" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/YourScratches"]
+layout_mode = 2
+text = "Your Scratches"
+
+[node name="ScratchCards" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShowMoreButton" type="Button" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/ScratchCards"]
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.603922, 0.6, 0.603922, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_6f47n")
 text = "Show more"
+
+[node name="StatsUpdateTimer" type="Timer" parent="."]
+wait_time = 5.0
+autostart = true

@@ -11,19 +11,21 @@ public partial class ScratchListPage : Node
 	private Label _scratchCountLabel;
 	private Label _githubUserCountLabel;
 	private Label _asmCountLabel;
+	private Timer _statsUpdateTimer;
 
 	private DecompMeApi.ScratchList _latestScratchList;
-	private DecompMeApi.ScratchListRequest _scratchListRequest;
-	private DecompMeApi.StatsRequest _statsRequest;
+	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _scratchListRequest;
+	private DecompMeApi.JsonRequest<DecompMeApi.Stats> _statsRequest;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer");
-		_showMoreButton = GetNode<Button>("ScrollContainer/VBoxContainer/ShowMoreButton");
+		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/ScratchCards");
+		_showMoreButton = GetNode<Button>("ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/ScratchCards/ShowMoreButton");
 		_scratchCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/ScratchCountLabel");
 		_githubUserCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/GitHubUserCountLabel");
 		_asmCountLabel = GetNode<Label>("ScrollContainer/VBoxContainer/VBoxContainer/HBoxContainer/AsmCountLabel");
+		_statsUpdateTimer = GetNode<Timer>("StatsUpdateTimer");
 
 		_showMoreButton.Visible = false;
 
@@ -35,13 +37,8 @@ public partial class ScratchListPage : Node
 			_scratchListRequest = null;
 		};
 
-		_statsRequest = DecompMeApi.Instance.RequestStats();
-		_statsRequest.DataReceived += () =>
-		{
-			PopulateStats(_statsRequest.Data);
-			_statsRequest.QueueFree();
-			_statsRequest = null;
-		};
+		RequestStats();
+		_statsUpdateTimer.Timeout += RequestStats;
 
 		_showMoreButton.Pressed += NextPage;
 	}
@@ -91,6 +88,17 @@ public partial class ScratchListPage : Node
 			PopulateScratchCards(_scratchListRequest.Data);
 			_scratchListRequest.QueueFree();
 			_scratchListRequest = null;
+		};
+	}
+
+	private void RequestStats()
+	{
+		_statsRequest = DecompMeApi.Instance.RequestStats();
+		_statsRequest.DataReceived += () =>
+		{
+			PopulateStats(_statsRequest.Data);
+			_statsRequest.QueueFree();
+			_statsRequest = null;
 		};
 	}
 }

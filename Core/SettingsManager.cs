@@ -68,6 +68,11 @@ public partial class SettingsManager : Node
 		return _config.GetValue(section, key);
 	}
 
+	public bool HasSectionKey(string section, string key)
+	{
+		return _config.HasSectionKey(section, key);
+	}
+
 	public void Save()
 	{
 		_config.Save(SettingsPath);
