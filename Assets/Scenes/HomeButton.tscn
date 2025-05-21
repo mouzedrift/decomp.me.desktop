@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bt0e320ks2y6w"]
 
 [ext_resource type="Texture2D" uid="uid://dwjidbg3gr5v1" path="res://Assets/Images/purplefrog.svg" id="1_8oduo"]
-[ext_resource type="Script" uid="uid://bbl5knq4jntsq" path="res://Assets/Scenes/HomeButton.cs" id="1_cvrff"]
+[ext_resource type="Script" uid="uid://bbl5knq4jntsq" path="res://UI/HomeButton.cs" id="1_cvrff"]
 
 [node name="HomeButton" type="HBoxContainer"]
 mouse_default_cursor_shape = 2

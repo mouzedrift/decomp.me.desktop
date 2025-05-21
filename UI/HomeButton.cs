@@ -2,6 +2,8 @@ using DecompMeDesktop.Core;
 using Godot;
 using System;
 
+namespace DecompMeDesktop.UI;
+
 public partial class HomeButton : HBoxContainer
 {
 	private readonly PackedScene ScratchListPage = ResourceLoader.Load<PackedScene>("uid://dgrhdqs4p8wr3");

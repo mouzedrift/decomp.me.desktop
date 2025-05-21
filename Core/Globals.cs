@@ -18,12 +18,9 @@ public partial class Globals : Node
 	public ILanguageClient LanguageClient { get; private set; }
 	public Process ClangdProcess { get; private set; }
 
-	public static readonly string ScratchRoot = ProjectSettings.GlobalizePath("user://scratch");
-	public static string PythonVenvPath = ProjectSettings.GlobalizePath("user://venv");
-	public static readonly string BinPath = ProjectSettings.GlobalizePath("user://bin");
-	public static readonly string CompilersPath = ProjectSettings.GlobalizePath("user://compilers");
-	public static string PythonExePath { get; private set; }
-	public static string PythonVenvPipPath { get; private set; }
+	private static string _pythonVenv { get; set; }
+	private static string _pythonExePath { get; set; }
+	private static string _pythonVenvPipPath { get; set; }
 
 	private static readonly List<string> PythonRequirements = new List<string>()
 	{
@@ -47,7 +44,7 @@ public partial class Globals : Node
 	{
 		Instance = this;
 
-		CreateDirectories();
+		AppDirs.CreateDirectories();
 
 		Utils.CopyBinFiles();
 
@@ -58,14 +55,6 @@ public partial class Globals : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-	}
-
-	private static void CreateDirectories()
-	{
-		Directory.CreateDirectory(ScratchRoot);
-		Directory.CreateDirectory(PythonVenvPath);
-		Directory.CreateDirectory(BinPath);
-		Directory.CreateDirectory(CompilersPath);
 	}
 
 	private async Task StartClangdAsync()
@@ -96,22 +85,33 @@ public partial class Globals : Node
 
 	public static async Task CheckAllDependenciesAsync()
 	{
+		var globalPythonVenvDir = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
+
+		_pythonVenv = globalPythonVenvDir;
+		_pythonExePath = globalPythonVenvDir + "/bin" + "/python3";
+		_pythonVenvPipPath = globalPythonVenvDir + "/bin" + "/pip3";
+
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			PythonVenvPath = await ToWslPathAsync(PythonVenvPath);
+			_pythonVenv = await ToWslPathAsync(_pythonVenv);
+			_pythonExePath = await ToWslPathAsync(_pythonExePath);
+			_pythonVenvPipPath = await ToWslPathAsync(_pythonVenvPipPath);
 		}
 
-		PythonExePath = PythonVenvPath + "/bin" + "/python3";
-		PythonVenvPipPath = PythonVenvPath + "/bin" + "/pip3";
+		GD.Print("Python venv: " + _pythonVenv);
+		GD.Print("Python exe: " + _pythonExePath);
+		GD.Print("pip exe: " + _pythonVenvPipPath);
 
-		GD.Print("Python venv: " + PythonVenvPath);
-		GD.Print("Python exe: " + PythonExePath);
-		GD.Print("pip exe: " + PythonVenvPipPath);
-
-		await CreatePythonVenvAsync();
-		if (await IsPythonInstalledAsync() && await ArePackagesInstalledAsync())
+		if (await IsPythonInstalledAsync())
 		{
+			await CreatePythonVenvAsync();
+			var missingPythonPackages = await GetMissingPythonPackagesAsync();
+			await InstallPythonPackagesAsync(missingPythonPackages);
 			GD.Print("All requirements met.");
+		}
+		else
+		{
+			GD.PrintErr("Python version >= 3.6 is required.");
 		}
 	}
 
@@ -120,7 +120,7 @@ public partial class Globals : Node
 		using var process = StartProcess("wsl", "python3 --version");
 		if (process == null)
 		{
-			GD.Print("Error checking Python requirements");
+			GD.PrintErr("Error checking Python requirements");
 			return false;
 		}
 
@@ -141,13 +141,13 @@ public partial class Globals : Node
 		return false;
 	}
 
-	private static async Task<bool> ArePackagesInstalledAsync()
+	private static async Task<List<string>> GetMissingPythonPackagesAsync()
 	{
-		using var process = StartProcess("wsl", $"{PythonExePath} -m pip list --format=freeze");
+		using var process = StartProcess("wsl", $"{_pythonExePath} -m pip list --format=freeze");
 		if (process == null)
 		{
 			GD.Print("Error checking Python requirements");
-			return false;
+			return [];
 		}
 
 		string output = await process.StandardOutput.ReadToEndAsync();
@@ -163,7 +163,7 @@ public partial class Globals : Node
 			}
 		}
 
-		List<string> missingPackages = new();
+		List<string> missingPackages = [];
 		foreach (var requirement in PythonRequirements)
 		{
 			if (!installedPackages.Contains(requirement.ToLower()))
@@ -173,12 +173,7 @@ public partial class Globals : Node
 			}
 		}
 
-		if (missingPackages.Count == 0)
-		{
-			return true;
-		}
-
-		return await InstallPythonPackagesAsync(missingPackages);
+		return missingPackages;
 	}
 
 	private static async Task<bool> InstallPythonPackagesAsync(List<string> packages)
@@ -191,10 +186,10 @@ public partial class Globals : Node
 		// Combine all package names into one string
 		string joinedPackages = string.Join(" ", packages);
 
-		using var process = StartProcess("wsl", $"{PythonExePath} -m pip install {joinedPackages}");
+		using var process = StartProcess("wsl", $"{_pythonExePath} -m pip install {joinedPackages}");
 		if (process == null)
 		{
-			GD.Print("Error installing Python packages");
+			GD.PrintErr("Error installing Python packages");
 			return false;
 		}
 
@@ -204,7 +199,7 @@ public partial class Globals : Node
 
 		if (!string.IsNullOrWhiteSpace(error))
 		{
-			GD.Print("pip error:\n" + error);
+			GD.PrintErr("pip error:\n" + error);
 		}
 
 		return process.ExitCode == 0;
@@ -215,16 +210,16 @@ public partial class Globals : Node
 		Process process = new Process();
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			process = StartProcess("wsl", $"python3 -m venv {PythonVenvPath}");
+			process = StartProcess("wsl", $"python3 -m venv {_pythonVenv}");
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			process = StartProcess("python3", $"-m venv {PythonVenvPath}");
+			process = StartProcess("python3", $"-m venv {_pythonVenv}");
 		}
 
 		if (process == null)
 		{
-			GD.Print("Failed to create python venv!");
+			GD.PrintErr("Failed to create python venv!");
 			return false;
 		}
 
@@ -233,13 +228,16 @@ public partial class Globals : Node
 
 		await process.WaitForExitAsync();
 
-		GD.Print("Successfully created python venv!");
+		GD.Print($"Successfully created python venv at: {_pythonVenv}");
 		return true;
 	}
 
+	// TODO: convert the path without starting wsl
+	// input: C:\\dir1\\dir2
+	// output: /mnt/c/dir1/dir2
 	private static async Task<string> ToWslPathAsync(string windowsPath)
 	{
-		using var process = StartProcess("wsl", $"wslpath {PythonVenvPath}");
+		using var process = StartProcess("wsl", $"wslpath {windowsPath}");
 		if (process == null)
 		{
 			return string.Empty;
@@ -253,7 +251,7 @@ public partial class Globals : Node
 
 	private static async Task<string> RunPythonAsync(string command)
 	{
-		using var process = StartProcess("wsl", $"{PythonExePath} {command}");
+		using var process = StartProcess("wsl", $"{_pythonExePath} {command}");
 		if (process == null)
 		{
 			return string.Empty;
@@ -315,13 +313,14 @@ public partial class Globals : Node
 	public static async Task<string> RunAsmDiffAsync(string symbol)
 	{
 		Process process = new Process();
+		var globalBinDir = ProjectSettings.GlobalizePath(AppDirs.Bin);
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			process = StartProcess("wsl", $"{PythonExePath} diff.py -o --no-pager --format json -f obj.o {symbol}", BinPath);
+			process = StartProcess("wsl", $"{_pythonExePath} diff.py -o --no-pager --format json -f obj.o {symbol}", globalBinDir);
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			process = StartProcess($"{PythonExePath} diff.py", $"-o --no-pager --format json -f obj.o {symbol}", BinPath);
+			process = StartProcess($"{_pythonExePath} diff.py", $"-o --no-pager --format json -f obj.o {symbol}", globalBinDir);
 		}
 
 		if (process == null)
@@ -334,8 +333,6 @@ public partial class Globals : Node
 		string error = await process.StandardError.ReadToEndAsync();
 
 		await process.WaitForExitAsync();
-
-		GD.Print(error);
 
 		return diffJson;
 	}

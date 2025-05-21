@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 
 namespace DecompMeDesktop.Core;
 
@@ -42,50 +43,33 @@ public class Utils
 
 	public static void CopyBinFiles()
 	{
-		Directory.CreateDirectory(Globals.BinPath);
-		if (File.Exists(Globals.BinPath.PathJoin("diff.py")) &&
-			File.Exists(Globals.BinPath.PathJoin("diff_settings.py")) &&
-			File.Exists(Globals.BinPath.PathJoin("diff-stylesheet.css")))
+		var binDir = DirAccess.Open("res://Assets/Bin");
+		var error = binDir.ListDirBegin();
+		if (error != Error.Ok)
 		{
+			GD.PrintErr($"Could not open resDir: {error}");
 			return;
 		}
-
-		var resDir = DirAccess.Open("res://Assets/Bin");
-		if (resDir.ListDirBegin() != Error.Ok)
+		
+		foreach (var fileName in binDir.GetFiles())
 		{
-			GD.Print("Could not open resDir");
-			return;
-		}
+			var src = binDir.GetCurrentDir().PathJoin(fileName);
+			var dst = AppDirs.Bin.PathJoin(fileName);
 
-		foreach (var file in resDir.GetFiles())
-		{
-			var fileResPath = resDir.GetCurrentDir().PathJoin(file);
-
-			using var resFile = Godot.FileAccess.Open(fileResPath, Godot.FileAccess.ModeFlags.Read);
-			GD.Print(resFile.GetPath());
-			if (resFile.GetError() != Error.Ok)
-			{
-				GD.Print($"Failed to open source file: {fileResPath}");
-				continue;
-			}
-
-			var destPath = Globals.BinPath.PathJoin(file);
-			if (Godot.FileAccess.FileExists(destPath))
+			var globalFileDst = ProjectSettings.GlobalizePath(dst);
+			if (File.Exists(globalFileDst))
 			{
 				continue;
 			}
 
-			using var actualFile = Godot.FileAccess.Open(destPath, Godot.FileAccess.ModeFlags.Write);
-			if (actualFile.GetError() != Error.Ok)
+			error = DirAccess.CopyAbsolute(src, dst);
+			if (error != Error.Ok)
 			{
-				GD.Print($"Failed to open destination file: {destPath}");
+				GD.PrintErr($"Could not copy file {src} to {dst}: {error}");
 				continue;
 			}
 
-			var content = resFile.GetBuffer((int)resFile.GetLength());
-			actualFile.StoreBuffer(content);
-
-			GD.Print($"Copied file from {fileResPath} to {destPath}");
+			GD.Print($"Copied file from {src} to {dst}");
 		}
 	}
 

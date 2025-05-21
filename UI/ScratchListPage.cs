@@ -1,6 +1,5 @@
 using Godot;
 using DecompMeDesktop.Core;
-using System.Globalization;
 
 namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node

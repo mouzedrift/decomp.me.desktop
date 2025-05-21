@@ -17,7 +17,8 @@ public interface ICompiler
 
 	public bool IsInstalled()
 	{
-		var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
+
+		var compilerPath = Path.Combine(AppDirs.Compilers, Platform, Version);
 		return Directory.Exists(compilerPath) && Directory.GetFiles(compilerPath).Length >= 0;
 	}
 
@@ -28,7 +29,7 @@ public interface ICompiler
 			return;
 		}
 
-		var compilerPath = Path.Combine(Globals.CompilersPath, Platform, Version);
+		var compilerPath = Path.Combine(AppDirs.Compilers, Platform, Version);
 		Directory.Delete(compilerPath, true);
 	}
 
@@ -44,9 +45,10 @@ public class MSVCCompiler(string version, string downloadUrl) : ICompiler
 	
 	public void UpdateEnvironment(StringDictionary env)
 	{
-		string binPath = Path.Combine(Globals.CompilersPath, Platform, Version, "Bin");
+		var globalCompilersDir = ProjectSettings.GlobalizePath(AppDirs.Compilers);
+		string binPath = Path.Combine(globalCompilersDir, Platform, Version, "Bin");
 		env["PATH"] = $"{binPath};" + env["PATH"];
-		env["INCLUDE"] = Path.Combine(Globals.CompilersPath, Platform, Version, "Include");
+		env["INCLUDE"] = Path.Combine(globalCompilersDir, Platform, Version, "Include");
 	}
 }
 

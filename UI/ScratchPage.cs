@@ -105,11 +105,9 @@ public partial class ScratchPage : Control
 	{
 		_scratch = scratch;
 
-		_scratchDir = Globals.ScratchRoot.PathJoin(scratch.slug);
-		if (!Directory.Exists(_scratchDir))
-		{
-			Directory.CreateDirectory(_scratchDir);
-		}
+		var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
+		_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
+		Directory.CreateDirectory(_scratchDir);
 
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/UsernameLabel").Text = scratch.GetOwnerName();
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
@@ -191,7 +189,8 @@ public partial class ScratchPage : Control
 
 		File.WriteAllBytes(_scratchDir.PathJoin("target.o"), objTargetMs.ToArray());
 
-		var expectedDir = Path.Combine(Globals.BinPath, "expected");
+		var globalBinDir = ProjectSettings.GlobalizePath(AppDirs.Bin);
+		var expectedDir = Path.Combine(globalBinDir, "expected");
 		if (!Directory.Exists(expectedDir))
 		{
 			Directory.CreateDirectory(expectedDir);
@@ -200,7 +199,7 @@ public partial class ScratchPage : Control
 		var expectedObjPath = Path.Combine(expectedDir, "obj.o");
 		File.Copy(_scratchDir.PathJoin("target.o"), expectedObjPath, true);
 
-		var ourObjPath = Path.Combine(Globals.BinPath, "obj.o");
+		var ourObjPath = Path.Combine(globalBinDir, "obj.o");
 		File.WriteAllBytes(ourObjPath, objCurrentMs.ToArray());
 
 		var ctxFilePath = Path.Combine(_scratchDir, "ctx.c");
@@ -270,7 +269,7 @@ public partial class ScratchPage : Control
 		if (process.ExitCode == 0)
 		{
 			string src = _scratchDir.PathJoin("code.obj");
-			string dst = Globals.BinPath.PathJoin("obj.o");
+			string dst = AppDirs.Bin.PathJoin("obj.o");
 			File.Copy(src, dst, true);
 
 			var json = await Globals.RunAsmDiffAsync(_scratch.name);

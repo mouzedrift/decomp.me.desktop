@@ -134,7 +134,8 @@ public partial class CompilerManagerWindow : Window
 		_lastRequest.QueueFree();
 		_lastRequest = null;
 		var compiler = _compilersToInstall[0];
-		var compilerDir = Path.Combine(Globals.CompilersPath, compiler.Compiler.Platform, compiler.Compiler.Version);
+		var globalCompilersDir = ProjectSettings.GlobalizePath(AppDirs.Compilers);
+		var compilerDir = Path.Combine(globalCompilersDir, compiler.Compiler.Platform, compiler.Compiler.Version);
 		Directory.CreateDirectory(compilerDir);
 
 		foreach (var header in headers)

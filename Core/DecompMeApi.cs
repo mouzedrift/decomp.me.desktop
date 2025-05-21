@@ -3,12 +3,14 @@ using OmniSharp.Extensions.JsonRpc;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
 namespace DecompMeDesktop.Core;
 
 public partial class DecompMeApi : Node
 {
 	public static DecompMeApi Instance {  get; private set; }
+	public const string ApiUrl = "https://decomp.me/api";
 
 #nullable enable
 
@@ -163,15 +165,16 @@ public partial class DecompMeApi : Node
 		VerifyPageSize(pageSize);
 		var httpRequest = new ScratchListRequest();
 		AddChild(httpRequest);
+
+		string requestStr = $"{ApiUrl}/scratch?";
+		requestStr += $"page_size={pageSize}&";
 		if (search != "")
 		{
-			httpRequest.Request($"https://decomp.me/api/scratch?search={search}&page_size={pageSize}");
-		}
-		else
-		{
-			httpRequest.Request($"https://decomp.me/api/scratch?page_size={pageSize}");
+			requestStr += $"search={search}";
 		}
 
+		GD.Print(requestStr);
+		httpRequest.Request(requestStr);
 		return httpRequest;
 	}
 
@@ -196,7 +199,7 @@ public partial class DecompMeApi : Node
 	{
 		var httpRequest = new StatsRequest();
 		AddChild(httpRequest);
-		httpRequest.Request("https://decomp.me/api/stats");
+		httpRequest.Request($"{ApiUrl}/stats");
 		return httpRequest;
 	}
 
@@ -209,7 +212,7 @@ public partial class DecompMeApi : Node
 	{
 		var httpRequest = new HttpRequest();
 		AddChild(httpRequest);
-		httpRequest.Request($"https://decomp.me/api/scratch/{slug}/export");
+		httpRequest.Request($"{ApiUrl}/scratch/{slug}/export");
 		return httpRequest;
 	}
 
