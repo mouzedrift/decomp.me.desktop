@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="decomp.me.desktop"
-run/main_scene="uid://cclumsm16pc5d"
+run/main_scene="uid://dgrhdqs4p8wr3"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 run/low_processor_mode=true
 boot_splash/bg_color=Color(0.0980392, 0.0901961, 0.0980392, 1)
@@ -19,10 +19,10 @@ config/icon="uid://dwjidbg3gr5v1"
 
 [autoload]
 
-DecompMeApi="*res://Core/DecompMeApi.cs"
+SettingsManager="*res://Core/SettingsManager.cs"
 SceneManager="*res://Core/SceneManager.cs"
 Globals="*res://Core/Globals.cs"
-SettingsManager="*res://Core/SettingsManager.cs"
+DecompMeApi="*res://Core/DecompMeApi.cs"
 
 [display]
 
@@ -41,7 +41,7 @@ theme/default_font_multichannel_signed_distance_field=true
 
 [input]
 
-code_save={
+scratch_save={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":83,"key_label":0,"unicode":115,"location":0,"echo":false,"script":null)
 ]

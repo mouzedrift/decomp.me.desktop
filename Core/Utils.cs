@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace DecompMeDesktop.Core;
@@ -190,6 +191,26 @@ public class Utils
 	public static string GetMatchPercentage(int? score, int? maxScore)
 	{
 		float? percentage = 100f - ((float)score / maxScore) * 100f;
+		if (percentage >= 100f)
+		{
+			return "100%";
+		}
 		return $"{percentage:0.00}%";
+	}
+
+	public static T DeepCopy<T>(T obj)
+	{
+		T copy = default;
+		try
+		{
+			var json = JsonSerializer.Serialize(obj);
+			copy = JsonSerializer.Deserialize<T>(json);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr(ex.Message);
+		}
+
+		return copy;
 	}
 }

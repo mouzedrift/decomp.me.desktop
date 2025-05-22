@@ -13,6 +13,10 @@ public partial class DecompMeApi : Node
 	public const string ApiUrl = "https://decomp.me/api";
 	public const int DefaultPageSize = 20;
 	public const int MaxPageSize = 100;
+	public const bool DebugRequests = true;
+
+	public User CurrentUser { get; private set; }
+	[Signal] public delegate void UserReadyEventHandler();
 
 #nullable enable
 
@@ -44,6 +48,8 @@ public partial class DecompMeApi : Node
 		public bool? match_override { get; set; }
 		public string? parent { get; set; }
 		public List<string>? libraries { get; set; }
+		public string? diff_label { get; set; }
+		public List<string>? diff_flags { get; set; }
 
 		public string GetCreationTime()
 		{
@@ -102,22 +108,27 @@ public partial class DecompMeApi : Node
 
 #nullable disable
 
+	public static string[] AddHeader(string[] headers, string headerToAdd)
+	{
+		if (headers != null)
+		{
+			headers = headers.Append(headerToAdd).ToArray();
+		}
+		else
+		{
+			headers = [headerToAdd];
+		}
+		return headers;
+	}
+
 	public static string[] AddCookie(string[] customHeaders)
 	{
 		if (SettingsManager.Instance.HasSectionKey("Cookie", "session_id"))
 		{
 			var sessionId = SettingsManager.Instance.GetValue("Cookie", "session_id").AsString();
 			var cookieHeader = $"Cookie: sessionid={sessionId}";
-			if (customHeaders != null)
-			{
-				customHeaders = customHeaders.Append(cookieHeader).ToArray();
-			}
-			else
-			{
-				customHeaders = [cookieHeader];
-			}
+			customHeaders = AddHeader(customHeaders, cookieHeader);
 		}
-
 		return customHeaders;
 	}
 
@@ -146,6 +157,28 @@ public partial class DecompMeApi : Node
 		{
 			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
 			{
+				if (DebugRequests)
+				{
+					GD.Print($"HTTP result: {result} response code: {responseCode}");
+				}
+
+				bool isJson = false;
+				foreach (var header in headers)
+				{
+					if (header == "Content-Type: application/json")
+					{
+						isJson = true;
+						break;
+					}
+				}
+
+				if (!isJson)
+				{
+					GD.Print("JsonRequest content is not application/json");
+					GD.Print(body.GetStringFromUtf8());
+					return;
+				}
+
 				string jsonStr = body.GetStringFromUtf8();
 				Data = JsonSerializer.Deserialize<T>(jsonStr);
 
@@ -157,8 +190,19 @@ public partial class DecompMeApi : Node
 
 		public new Godot.Error Request(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
 		{
+			customHeaders = AddHeader(customHeaders, "Accept: application/json");
 			customHeaders = AddCookie(customHeaders);
-			return base.Request(url, customHeaders, method, requestData);
+			var error = base.Request(url, customHeaders, method, requestData);
+			if (error != Error.Ok)
+			{
+				GD.PrintErr($"{method} {url} failed with error: {error}");
+			}
+
+			if (DebugRequests)
+			{
+				GD.Print($"{method} {url}");
+			}
+			return error;
 		}
 	}
 
@@ -166,6 +210,20 @@ public partial class DecompMeApi : Node
 	public override void _Ready()
 	{
 		Instance = this;
+
+		SceneManager.Instance.PreSceneChange += () =>
+		{
+			QueueFreeAllRequests();
+		};
+
+		var userRequest = RequestUser();
+		userRequest.DataReceived += () =>
+		{
+			CurrentUser = userRequest.Data;
+			GD.Print($"Logged in as {CurrentUser.username}, anon={CurrentUser.is_anonymous}");
+			userRequest.QueueFree();
+			EmitSignal(SignalName.UserReady);
+		};
 	}
 
 	public JsonRequest<ScratchList> RequestScratchList(string search = "", int pageSize = DefaultPageSize)
@@ -181,7 +239,6 @@ public partial class DecompMeApi : Node
 			requestStr += $"search={search}";
 		}
 
-		GD.Print(requestStr);
 		httpRequest.Request(requestStr);
 		return httpRequest;
 	}
@@ -241,10 +298,10 @@ public partial class DecompMeApi : Node
 		var httpRequest = new JsonRequest<ScratchListItem>();
 		AddChild(httpRequest);
 		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/fork", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
-		httpRequest.DataReceived += () => ClaimScratch(httpRequest.Data);
 		return httpRequest;
 	}
 
+	// returns the claimed scratch
 	public void ClaimScratch(ScratchListItem scratch)
 	{
 		if (scratch.claim_token == null || scratch.slug == null)
@@ -276,6 +333,18 @@ public partial class DecompMeApi : Node
 		};
 	}
 
+	public void UpdateScratch(ScratchListItem scratch)
+	{
+		var httpRequest = new HttpRequest();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Patch, JsonSerializer.Serialize(scratch));
+		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
+		{
+			SaveCookie(headers);
+			httpRequest.QueueFree();
+		};
+	}
+
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
@@ -294,6 +363,18 @@ public partial class DecompMeApi : Node
 		if (pageSize > MaxPageSize)
 		{
 			GD.PushWarning($"Page size cannot be larger than {MaxPageSize}");
+		}
+	}
+
+	private void QueueFreeAllRequests()
+	{
+		foreach (var child in GetChildren())
+		{
+			if (child is HttpRequest request)
+			{
+				request.CancelRequest();
+				request.QueueFree();
+			}
 		}
 	}
 }

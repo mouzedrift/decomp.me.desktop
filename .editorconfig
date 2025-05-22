@@ -2,3 +2,6 @@ root = true
 
 [*]
 charset = utf-8
+
+dotnet_diagnostic.VSTHRD101.severity = none
+dotnet_diagnostic.VSTHRD100.severity = none

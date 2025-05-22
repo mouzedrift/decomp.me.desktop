@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://fc2pb1gqypff"]
+
+[ext_resource type="Script" uid="uid://bhy3ufgqd468o" path="res://UI/LinkLabel.cs" id="1_ri7xf"]
+
+[node name="LinkLabel" type="Label"]
+offset_right = 63.0
+offset_bottom = 23.0
+text = "link label"
+script = ExtResource("1_ri7xf")

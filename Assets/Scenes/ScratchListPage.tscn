@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://dgrhdqs4p8wr3"]
+[gd_scene load_steps=12 format=3 uid="uid://dgrhdqs4p8wr3"]
 
 [ext_resource type="Script" uid="uid://cki3wrgxcjv7i" path="res://UI/ScratchListPage.cs" id="1_6f47n"]
 [ext_resource type="PackedScene" uid="uid://pscjob0u0d2d" path="res://Assets/Scenes/NavigationHeader.tscn" id="2_2vs54"]
@@ -45,6 +45,10 @@ line_spacing = -4.0
 font_size = 12
 font_color = Color(0.694118, 0.686275, 0.721569, 1)
 
+[sub_resource type="LabelSettings" id="LabelSettings_n1n78"]
+font_size = 18
+font_color = Color(0.933333, 0.933333, 0.941176, 1)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6f47n"]
 content_margin_left = 8.0
 content_margin_top = 8.0
@@ -71,6 +75,7 @@ script = ExtResource("1_6f47n")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
 layout_mode = 2
+horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
 layout_mode = 2
@@ -166,21 +171,51 @@ theme_override_constants/margin_right = 120
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2"]
 layout_mode = 2
+
+[node name="Spacer" type="Control" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="YourScratches" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_constants/margin_right = 32
+
+[node name="YourScratches" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/MarginContainer"]
 custom_minimum_size = Vector2(240, 0)
-layout_mode = 2
-
-[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/YourScratches"]
-layout_mode = 2
-text = "Your Scratches"
-
-[node name="ScratchCards" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ShowMoreButton" type="Button" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/ScratchCards"]
+[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/MarginContainer/YourScratches"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 12
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/MarginContainer/YourScratches/MarginContainer"]
+layout_mode = 2
+text = "Your Scratches"
+label_settings = SubResource("LabelSettings_n1n78")
+
+[node name="ScratchCards" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/ScratchCards"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 12
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/ScratchCards/MarginContainer"]
+layout_mode = 2
+text = "Recent Activity"
+label_settings = SubResource("LabelSettings_n1n78")
+
+[node name="ShowMoreButton" type="Button" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/ScratchCards"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -188,6 +223,11 @@ mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.603922, 0.6, 0.603922, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_6f47n")
 text = "Show more"
+
+[node name="Spacer1" type="Control" parent="ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.2
 
 [node name="StatsUpdateTimer" type="Timer" parent="."]
 wait_time = 5.0

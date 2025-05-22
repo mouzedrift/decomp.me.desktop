@@ -6,18 +6,12 @@ namespace DecompMeDesktop.UI;
 
 public partial class ScratchCard : PanelContainer
 {
-	[Export] private RichTextLabel _functionNameLabel;
+	[Export] private LinkLabel _functionNameLabel;
 	public void SetPlatformImage(Texture2D texture) => GetNode<TextureRect>("MarginContainer/VBoxContainer/HBoxContainer/PlatformTextureRect").Texture = texture;
 	public void SetFunctionName(string name, string scratchSlug = "")
 	{
-		if (scratchSlug != "")
-		{
-			_functionNameLabel.Text = $"[b][url=https://decomp.me/api/scratch/{scratchSlug}]{name}[/url][/b]";
-		}
-		else
-		{
-			_functionNameLabel.Text = name;
-		}
+		_functionNameLabel.Text = name;
+		_scratchSlug = scratchSlug;
 	}
 	public void SetPresetName(string name) => GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer2/PresetNameLabel").Text = name;
 	public void SetMatchPercentage(string percent) => GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer2/MatchPercentageLabel").Text = percent;
@@ -30,18 +24,16 @@ public partial class ScratchCard : PanelContainer
 	}
 
 	private readonly PackedScene SCRATCH_PAGE = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
-
+	private string _scratchSlug;
 
 	// Called when the node enters the scene tree for the first time.
 
 	public override void _Ready()
 	{
-		_functionNameLabel.MouseEntered += () => _functionNameLabel.SelfModulate = new Color("#58a6ff");
-		_functionNameLabel.MouseExited += () => _functionNameLabel.SelfModulate = Colors.White;
-
-		_functionNameLabel.MetaClicked += (Variant meta) =>
+		_functionNameLabel.Pressed += () =>
 		{
-			var request = DecompMeApi.Instance.RequestScratch(meta.AsString());
+			var url = $"{DecompMeApi.ApiUrl}/scratch/{_scratchSlug}";
+			var request = DecompMeApi.Instance.RequestScratch(url);
 			request.DataReceived += () =>
 			{
 				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
@@ -49,8 +41,6 @@ public partial class ScratchCard : PanelContainer
 				SceneManager.Instance.ChangeScene(scratchPage);
 				request.QueueFree();
 			};
-
-			GD.Print($"meta clicked: {meta.AsString()}");
 		};
 	}
 

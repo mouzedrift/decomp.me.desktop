@@ -31,6 +31,16 @@ public partial class Globals : Node
 	{
 		Instance = this;
 
+		var window = GetTree().Root.GetWindow();
+		var width = ProjectSettings.GetSetting("display/window/size/viewport_width").AsInt32();
+		var height = ProjectSettings.GetSetting("display/window/size/viewport_height").AsInt32();
+		var minSize = new Vector2I(width, height);
+
+		if (window.Size <= minSize)
+		{
+			window.MinSize = minSize;
+		}
+
 		AppDirs.CreateDirectories();
 
 		Utils.CopyBinFiles();

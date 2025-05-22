@@ -4,13 +4,16 @@ using Godot;
 using Nerdbank.Streams;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static DecompMeDesktop.Core.DecompMeApi;
 using static System.Net.Mime.MediaTypeNames;
 using Environment = System.Environment;
 
@@ -21,7 +24,8 @@ public partial class ScratchPage : Control
 	private Stopwatch _stopwatch = new Stopwatch();
 	private HttpRequest _httpRequest;
 	private AsmDiffPanel _asmDiffWindow;
-	private DecompMeApi.ScratchListItem _scratch;
+	private DecompMeApi.ScratchListItem _originalScratch;
+	private DecompMeApi.ScratchListItem _currentScratch;
 	private string _scratchDir;
 	private CppCodeEdit _ctxCodeEdit;
 	private CppCodeEdit _srcCodeEdit;
@@ -34,9 +38,10 @@ public partial class ScratchPage : Control
 	private Button _compileButton;
 	private Timer _recompileTimer;
 	private HttpRequest _forkRequest;
+	private ICompiler _currentCompiler;
 
 	// Called when the node enters the scene tree for the first time.
-	public override async void _Ready()
+	public override void _Ready()
 	{
 		_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
 		_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
@@ -58,7 +63,7 @@ public partial class ScratchPage : Control
 			_recompileTimer.Start();
 		};
 
-		_saveButton.Pressed += SaveCode;
+		_saveButton.Pressed += SaveScratch;
 		_compileButton.Pressed += async () =>
 		{
 			SaveCode();
@@ -67,6 +72,11 @@ public partial class ScratchPage : Control
 
 		_recompileTimer.Timeout += async () =>
 		{
+			if (_currentCompiler == null)
+			{
+				return;
+			}
+
 			GD.Print("auto recompile triggered");
 			SaveCode();
 			await CompileAsync();
@@ -74,26 +84,55 @@ public partial class ScratchPage : Control
 
 		_forkButton.Pressed += () =>
 		{
-			var forkRequest = DecompMeApi.Instance.ForkScratch(_scratch);
-			forkRequest.DataReceived += () => forkRequest.QueueFree();
+			ForkCurrentScratch();
 		};
 
 		_deleteButton.Pressed += () =>
 		{
-			DecompMeApi.Instance.DeleteScratch(_scratch);
+			DecompMeApi.Instance.DeleteScratch(_currentScratch);
 		};
+
+		if (_currentCompiler == null)
+		{
+			Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!");
+		}
+	}
+
+	private void ForkCurrentScratch()
+	{
+		var forkRequest = DecompMeApi.Instance.ForkScratch(_currentScratch);
+		forkRequest.DataReceived += () =>
+		{
+			DecompMeApi.Instance.ClaimScratch(forkRequest.Data);
+			_currentScratch = forkRequest.Data;
+			forkRequest.QueueFree();
+		};
+	}
+
+	private void SaveScratch()
+	{
+		SaveCode();
+
+		if (DecompMeApi.Instance.CurrentUser.id != _currentScratch.owner.id)
+		{
+			ForkCurrentScratch();
+		}
+		else
+		{
+			DecompMeApi.Instance.UpdateScratch(_currentScratch);
+		}
 	}
 
 	private void SaveCode()
 	{
 		if (_ctxCodeEdit.RequestSave(_scratchDir))
 		{
-			_scratch.context = _ctxCodeEdit.Text;
+			_currentScratch.context = _ctxCodeEdit.Text;
 		}
 
 		if (_srcCodeEdit.RequestSave(_scratchDir))
 		{
-			_scratch.source_code = _srcCodeEdit.Text;
+			_currentScratch.source_code = _srcCodeEdit.Text;
 		}
 	}
 
@@ -104,9 +143,9 @@ public partial class ScratchPage : Control
 
 	public override async void _Input(InputEvent @event)
 	{
-		if (Input.IsActionJustPressed("code_save"))
+		if (Input.IsActionJustPressed("scratch_save"))
 		{
-			SaveCode();
+			SaveScratch();
 		}
 		else if (Input.IsActionJustPressed("code_compile"))
 		{
@@ -115,14 +154,12 @@ public partial class ScratchPage : Control
 		}
 	}
 
-	public override void _ExitTree()
-	{
-		_httpRequest?.CancelRequest();
-	}
-
 	public void Populate(DecompMeApi.ScratchListItem scratch)
 	{
-		_scratch = scratch;
+		_originalScratch = Utils.DeepCopy(scratch);
+		_currentScratch = scratch;
+
+		_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
 
 		var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
 		_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
@@ -132,7 +169,7 @@ public partial class ScratchPage : Control
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
 		GetNode<Label>("VBoxContainer/Header/HBoxContainer/TimestampLabel").Text = scratch.GetLastUpdatedTime();
 
-		string scoreStr = $"Score: {scratch.score} ({Utils.GetMatchPercentage(_scratch.score, _scratch.max_score)})";
+		string scoreStr = $"Score: {scratch.score} ({Utils.GetMatchPercentage(_currentScratch.score, _currentScratch.max_score)})";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {scratch.GetOwnerName()}";
 		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ForkOfTextLabel2").Text = $"Fork of: {scratch.parent}"; // TODO
@@ -230,20 +267,19 @@ public partial class ScratchPage : Control
 		sourceCode = "#include \"ctx.c\"\n" + sourceCode;
 		File.WriteAllText(codeFilePath, sourceCode);
 
-		var json = await Globals.RunAsmDiffAsync(_scratch.name);
+		var json = await Globals.RunAsmDiffAsync(_currentScratch.name);
 		var diffs = Globals.ParseAsmDifferJson(json);
 
 		_asmDiffWindow.SetTargetText(diffs["base"]);
 		_asmDiffWindow.SetCurrentText(diffs["current"]);
-		_asmDiffWindow.SetScore(_scratch.score.Value, _scratch.max_score.Value);
+		_asmDiffWindow.SetScore(_currentScratch.score.Value, _currentScratch.max_score.Value);
 	}
 
 	private async Task CompileAsync()
 	{
-		var compiler = Compilers.GetCompiler(_scratch.compiler);
-		if (compiler == null)
+		if (_currentCompiler == null)
 		{
-			Utils.CreateAcceptDialog(this, $"Compiler {_scratch.compiler} is not installed!");
+			Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!");
 			return;
 		}
 
@@ -265,15 +301,15 @@ public partial class ScratchPage : Control
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
 			psi.FileName = "cmd.exe";
-			psi.Arguments = $"/c {compiler.Command} code.c {_scratch.compiler_flags}";
+			psi.Arguments = $"/c {_currentCompiler.Command} code.c {_currentScratch.compiler_flags}";
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
 			psi.FileName = "wine";
-			psi.Arguments = $"cmd.exe /c {compiler.Command} code.c {_scratch.compiler_flags}";
+			psi.Arguments = $"cmd.exe /c {_currentCompiler.Command} code.c {_currentScratch.compiler_flags}";
 		}
 
-		compiler.UpdateEnvironment(psi.EnvironmentVariables);
+		_currentCompiler.UpdateEnvironment(psi.EnvironmentVariables);
 
 		_compilerRunning = true;
 
@@ -292,7 +328,7 @@ public partial class ScratchPage : Control
 			string dst = ProjectSettings.GlobalizePath(AppDirs.Bin.PathJoin("obj.o"));
 			File.Copy(src, dst, true);
 
-			var json = await Globals.RunAsmDiffAsync(_scratch.name);
+			var json = await Globals.RunAsmDiffAsync(_currentScratch.name);
 			var diffs = Globals.ParseAsmDifferJson(json);
 
 			File.WriteAllText("C:\\Users\\mouzedrift\\AppData\\Roaming\\Godot\\app_userdata\\decomp.me.desktop\\test.json", json);

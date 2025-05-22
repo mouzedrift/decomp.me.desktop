@@ -5,6 +5,9 @@ namespace DecompMeDesktop.Core;
 public partial class SceneManager : Node
 {
 	public static SceneManager Instance { get; private set; }
+	[Signal] public delegate void PostSceneChangeEventHandler();
+	[Signal] public delegate void PreSceneChangeEventHandler();
+
 	private Node _nextScene;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -19,6 +22,7 @@ public partial class SceneManager : Node
 
 	public void ChangeScene(Node scene)
 	{
+		EmitSignal(SignalName.PreSceneChange);
 		_nextScene = scene;
 		CallDeferred(MethodName.DeleteCurrentScene);
 	}
@@ -30,5 +34,6 @@ public partial class SceneManager : Node
 		GetTree().CurrentScene = _nextScene;
 
 		_nextScene = null;
+		EmitSignal(SignalName.PostSceneChange);
 	}
 }

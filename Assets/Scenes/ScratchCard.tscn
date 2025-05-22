@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://dt0o3udmv0e5g"]
+[gd_scene load_steps=5 format=3 uid="uid://dt0o3udmv0e5g"]
 
 [ext_resource type="Texture2D" uid="uid://dqjbtm21n2njc" path="res://icon.svg" id="1_jcbrb"]
 [ext_resource type="Script" uid="uid://djroawfa4lt66" path="res://UI/ScratchCard.cs" id="1_sv3k0"]
+[ext_resource type="Script" uid="uid://bhy3ufgqd468o" path="res://UI/LinkLabel.cs" id="3_22vxn"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sv3k0"]
 bg_color = Color(0.0980392, 0.0901961, 0.0980392, 1)
@@ -16,12 +17,9 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [node name="ScratchCard" type="PanelContainer" node_paths=PackedStringArray("_functionNameLabel")]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_bottom = -574.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_right = 834.0
+offset_bottom = 74.0
+size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_sv3k0")
 script = ExtResource("1_sv3k0")
 _functionNameLabel = NodePath("MarginContainer/VBoxContainer/HBoxContainer/FunctionNameLabel")
@@ -44,19 +42,12 @@ layout_mode = 2
 texture = ExtResource("1_jcbrb")
 expand_mode = 2
 
-[node name="FunctionNameLabel" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="FunctionNameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/bold_italics_font_size = 14
-theme_override_font_sizes/italics_font_size = 14
-theme_override_font_sizes/mono_font_size = 14
-theme_override_font_sizes/normal_font_size = 14
-theme_override_font_sizes/bold_font_size = 14
-bbcode_enabled = true
 text = "FunctionName"
-meta_underlined = false
-hint_underlined = false
+script = ExtResource("3_22vxn")
 
 [node name="UserAvatarTextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
