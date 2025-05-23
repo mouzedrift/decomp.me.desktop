@@ -43,59 +43,6 @@ public partial class ScratchPage : Control
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
-		_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
-		_srcCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit");
-		_compilerOutputPanel = GetNode<CompilerOutputPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/CompilerOutputPanel");
-		_newButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/NewButton");
-		_saveButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/SaveButton");
-		_forkButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/ForkButton");
-		_deleteButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/DeleteButton");
-		_compileButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/CompileButton");
-		_recompileTimer = GetNode<Timer>("RecompileTimer");
-
-		_ctxCodeEdit.TextChanged += () =>
-		{
-			_recompileTimer.Start();
-		};
-		_srcCodeEdit.TextChanged += () =>
-		{
-			_recompileTimer.Start();
-		};
-
-		_saveButton.Pressed += SaveScratch;
-		_compileButton.Pressed += async () =>
-		{
-			SaveCode();
-			await CompileAsync();
-		};
-
-		_recompileTimer.Timeout += async () =>
-		{
-			if (_currentCompiler == null)
-			{
-				return;
-			}
-
-			GD.Print("auto recompile triggered");
-			SaveCode();
-			await CompileAsync();
-		};
-
-		_forkButton.Pressed += () =>
-		{
-			ForkCurrentScratch();
-		};
-
-		_deleteButton.Pressed += () =>
-		{
-			DecompMeApi.Instance.DeleteScratch(_currentScratch);
-		};
-
-		if (_currentCompiler == null)
-		{
-			Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!");
-		}
 	}
 
 	private void ForkCurrentScratch()
@@ -154,36 +101,93 @@ public partial class ScratchPage : Control
 		}
 	}
 
-	public void Populate(DecompMeApi.ScratchListItem scratch)
+	public void Init(DecompMeApi.ScratchListItem scratch)
 	{
-		_originalScratch = Utils.DeepCopy(scratch);
-		_currentScratch = scratch;
+		Ready += () =>
+		{
+			_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
+			_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
+			_srcCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit");
+			_compilerOutputPanel = GetNode<CompilerOutputPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/CompilerOutputPanel");
+			_newButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/NewButton");
+			_saveButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/SaveButton");
+			_forkButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/ForkButton");
+			_deleteButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/DeleteButton");
+			_compileButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/CompileButton");
+			_recompileTimer = GetNode<Timer>("RecompileTimer");
 
-		_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
+			_originalScratch = Utils.DeepCopy(scratch);
+			_currentScratch = scratch;
 
-		var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
-		_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
-		Directory.CreateDirectory(_scratchDir);
+			_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
 
-		GetNode<Label>("VBoxContainer/Header/HBoxContainer/UsernameLabel").Text = scratch.GetOwnerName();
-		GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
-		GetNode<Label>("VBoxContainer/Header/HBoxContainer/TimestampLabel").Text = scratch.GetLastUpdatedTime();
+			var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
+			_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
+			Directory.CreateDirectory(_scratchDir);
 
-		string scoreStr = $"Score: {scratch.score} ({Utils.GetMatchPercentage(_currentScratch.score, _currentScratch.max_score)})";
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {scratch.GetOwnerName()}";
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ForkOfTextLabel2").Text = $"Fork of: {scratch.parent}"; // TODO
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PlatformRichTextLabel3").Text = $"Platform: {scratch.platform}";
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PresetRichTextLabel4").Text = $"Preset: {scratch.preset}"; // TODO
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/CreatedRichTextLabel5").Text = $"Created: {scratch.GetCreationTime()}";
-		GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ModifiedRichTextLabel6").Text = $"Modified: {scratch.GetLastUpdatedTime()}";
+			GetNode<Label>("VBoxContainer/Header/HBoxContainer/UsernameLabel").Text = scratch.GetOwnerName();
+			GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
+			GetNode<Label>("VBoxContainer/Header/HBoxContainer/TimestampLabel").Text = scratch.GetLastUpdatedTime();
 
-		GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit").Text = scratch.source_code;
-		GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit").Text = scratch.context;
+			string scoreStr = $"Score: {scratch.score} ({Utils.GetMatchPercentage(_currentScratch.score, _currentScratch.max_score)})";
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ScoreRichTextLabel").Text = scoreStr;
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/OwnerRichTextLabel").Text = $"Owner: {scratch.GetOwnerName()}";
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ForkOfTextLabel2").Text = $"Fork of: {scratch.parent}"; // TODO
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PlatformRichTextLabel3").Text = $"Platform: {scratch.platform}";
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/PresetRichTextLabel4").Text = $"Preset: {scratch.preset}"; // TODO
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/CreatedRichTextLabel5").Text = $"Created: {scratch.GetCreationTime()}";
+			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ModifiedRichTextLabel6").Text = $"Modified: {scratch.GetLastUpdatedTime()}";
 
-		_stopwatch.Start();
-		_httpRequest = DecompMeApi.Instance.RequestScratchZip(scratch.slug);
-		_httpRequest.RequestCompleted += OnZipRequestCompleted;
+			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit").Text = scratch.source_code;
+			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit").Text = scratch.context;
+
+			_ctxCodeEdit.TextChanged += () =>
+			{
+				_recompileTimer.Start();
+			};
+			_srcCodeEdit.TextChanged += () =>
+			{
+				_recompileTimer.Start();
+			};
+
+			_saveButton.Pressed += SaveScratch;
+			_compileButton.Pressed += async () =>
+			{
+				SaveCode();
+				await CompileAsync();
+			};
+
+			_recompileTimer.Timeout += async () =>
+			{
+				if (_currentCompiler == null)
+				{
+					return;
+				}
+
+				GD.Print("auto recompile triggered");
+				SaveCode();
+				await CompileAsync();
+			};
+
+			_forkButton.Pressed += () =>
+			{
+				ForkCurrentScratch();
+			};
+
+			_deleteButton.Pressed += () =>
+			{
+				DecompMeApi.Instance.DeleteScratch(_currentScratch);
+			};
+
+			if (_currentCompiler == null)
+			{
+				Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!");
+			}
+
+			_stopwatch.Start();
+			_httpRequest = DecompMeApi.Instance.RequestScratchZip(scratch.slug);
+			_httpRequest.RequestCompleted += OnZipRequestCompleted;
+		};
 	}
 
 	private async void OnZipRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
@@ -285,6 +289,7 @@ public partial class ScratchPage : Control
 
 		if (_compilerRunning)
 		{
+			GD.Print("already compiling...");
 			return;
 		}
 
@@ -305,23 +310,18 @@ public partial class ScratchPage : Control
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			psi.FileName = "wine";
-			psi.Arguments = $"cmd.exe /c {_currentCompiler.Command} code.c {_currentScratch.compiler_flags}";
+			psi.FileName = $"wine";
+			psi.Arguments = $"cmd.exe /c \"{_currentCompiler.Command} code.c {_currentScratch.compiler_flags}\"";
 		}
-
 		_currentCompiler.UpdateEnvironment(psi.EnvironmentVariables);
 
 		_compilerRunning = true;
 
 		var process = Process.Start(psi);
-		var stdoutTask = process.StandardOutput.ReadToEndAsync();
-		var stderrTask = process.StandardError.ReadToEndAsync();
 
 		await process.WaitForExitAsync();
 
-		string stdout = await stdoutTask;
-		string stderr = await stderrTask;
-
+		var stdout = await process.StandardOutput.ReadToEndAsync();
 		if (process.ExitCode == 0)
 		{
 			string src = _scratchDir.PathJoin("code.obj");
@@ -331,7 +331,6 @@ public partial class ScratchPage : Control
 			var json = await Globals.RunAsmDiffAsync(_currentScratch.name);
 			var diffs = Globals.ParseAsmDifferJson(json);
 
-			File.WriteAllText("C:\\Users\\mouzedrift\\AppData\\Roaming\\Godot\\app_userdata\\decomp.me.desktop\\test.json", json);
 			var root = JsonDocument.Parse(json).RootElement;
 			_asmDiffWindow.SetTargetText(diffs["base"]);
 			_asmDiffWindow.SetCurrentText(diffs["current"]);
@@ -340,5 +339,7 @@ public partial class ScratchPage : Control
 
 		_compilerOutputPanel.SetCompilerOutput(stdout);
 		_compilerRunning = false;
+		GD.Print("compiler finished with exit code " + process.ExitCode);
+		process.Dispose();
 	}
 }

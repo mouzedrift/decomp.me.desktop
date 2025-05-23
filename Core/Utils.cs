@@ -133,8 +133,9 @@ public class Utils
 
 			return Process.Start(psi);
 		}
-		catch
+		catch (Exception ex)
 		{
+			GD.Print(ex.Message);
 		}
 
 		return null;

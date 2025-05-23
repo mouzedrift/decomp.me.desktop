@@ -37,7 +37,7 @@ public partial class ScratchCard : PanelContainer
 			request.DataReceived += () =>
 			{
 				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-				scratchPage.Populate(request.Data);
+				scratchPage.Init(request.Data);
 				SceneManager.Instance.ChangeScene(scratchPage);
 				request.QueueFree();
 			};

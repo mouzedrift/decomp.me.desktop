@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace DecompMeDesktop.Core.Compilers;
 
@@ -48,7 +49,14 @@ public class MSVCCompiler(string version, string downloadUrl) : ICompiler
 	{
 		var globalCompilersDir = ProjectSettings.GlobalizePath(AppDirs.Compilers);
 		string binPath = Path.Combine(globalCompilersDir, Platform, Version, "Bin");
-		env["PATH"] = $"{binPath};" + env["PATH"];
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			env["PATH"] = $"{binPath};" + env["PATH"];
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			env["WINEPATH"] = $"{binPath};";
+		}
 		env["INCLUDE"] = Path.Combine(globalCompilersDir, Platform, Version, "Include");
 	}
 }

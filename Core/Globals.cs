@@ -152,7 +152,7 @@ public partial class Globals : Node
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			process = Utils.StartProcess($"{Utils.GetPython3Path()} diff.py", $"-o --no-pager --format json -f obj.o {symbol}", globalBinDir);
+			process = Utils.StartProcess(Utils.GetPython3Path(), $"diff.py -o --no-pager --format json -f obj.o {symbol}", globalBinDir);
 		}
 
 		if (process == null)
@@ -162,10 +162,10 @@ public partial class Globals : Node
 		}
 
 		string diffJson = await process.StandardOutput.ReadToEndAsync();
-		string error = await process.StandardError.ReadToEndAsync();
+		//string error = await process.StandardError.ReadToEndAsync();
 
 		await process.WaitForExitAsync();
-
+		process.Dispose();
 		return diffJson;
 	}
 }

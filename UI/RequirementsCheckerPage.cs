@@ -194,7 +194,6 @@ public partial class RequirementsCheckerPage : Control
 		string output = await process.StandardOutput.ReadToEndAsync();
 		string error = await process.StandardError.ReadToEndAsync();
 		await process.WaitForExitAsync();
-		process.Dispose();
 
 		if (!string.IsNullOrWhiteSpace(error))
 		{
@@ -208,6 +207,7 @@ public partial class RequirementsCheckerPage : Control
 			_installDepsTask.MarkAsDone();
 		}
 
+		process.Dispose();
 		return ok;
 	}
 
