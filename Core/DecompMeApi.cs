@@ -20,6 +20,12 @@ public partial class DecompMeApi : Node
 
 #nullable enable
 
+	public class PresetName
+	{
+		public int? id { get; set; }
+		public string? name { get; set; }
+	}
+
 	public class ScratchList
 	{
 		public string? next { get; set; }
@@ -343,6 +349,14 @@ public partial class DecompMeApi : Node
 			SaveCookie(headers);
 			httpRequest.QueueFree();
 		};
+	}
+
+	public JsonRequest<PresetName> RequestPresetName(int id)
+	{
+		var httpRequest = new JsonRequest<PresetName>();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/preset/{id}/name");
+		return httpRequest;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

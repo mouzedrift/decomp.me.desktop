@@ -1,11 +1,15 @@
 using Godot;
 using DecompMeDesktop.Core;
 using System;
+using System.Collections.Generic;
+using static DecompMeDesktop.Core.DecompMeApi;
+using System.Linq;
 
 namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node
 {
 	private readonly PackedScene SCRATCH_CARD = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchCard.tscn");
+	private readonly PackedScene SCRATCH_PAGE = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
 
 	private VBoxContainer _scratchCardContainer;
 	private Button _showMoreButton;
@@ -19,7 +23,8 @@ public partial class ScratchListPage : Node
 	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _scratchListRequest;
 	private DecompMeApi.JsonRequest<DecompMeApi.Stats> _statsRequest;
 	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _yourScratchesRequest;
-
+	private List<DecompMeApi.PresetName> _presetNameCache = [];
+	
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -83,6 +88,18 @@ public partial class ScratchListPage : Node
 			var yourScratchesItem = ResourceLoader.Load<PackedScene>("uid://ccu3o4odbtxox").Instantiate<YourScratchesTextItem>();
 			yourScratchesItem.SetFunctionName(scratch.name);
 			yourScratchesItem.SetMatchPercentage(Utils.GetMatchPercentage(scratch.score, scratch.max_score));
+			yourScratchesItem.LinkLabelPressed += ()  =>
+			{
+				var url = $"{DecompMeApi.ApiUrl}/scratch/{scratch.slug}";
+				var request = DecompMeApi.Instance.RequestScratch(url);
+				request.DataReceived += () =>
+				{
+					var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
+					scratchPage.Populate(request.Data);
+					SceneManager.Instance.ChangeScene(scratchPage);
+					request.QueueFree();
+				};
+			};
 			_yourScratchesHBox.AddChild(yourScratchesItem);
 		}
 	}
@@ -92,8 +109,28 @@ public partial class ScratchListPage : Node
 		foreach (var scratch in scratchList.results)
 		{
 			var card = SCRATCH_CARD.Instantiate<ScratchCard>();
+			if (scratch.preset == null)
+			{
+				// TODO: use the compiler translation instead https://github.com/decompme/decomp.me/blob/aaf1eb94e7160b33b44bd7f24765992f09e16798/frontend/src/lib/i18n/locales/en/compilers.json
+				// additionally clicking the name should bring you to the preset page
+				card.SetPresetName(scratch.compiler); 
+			}
+			else if (!_presetNameCache.Any(p => p.id == scratch.preset))
+			{
+				var presetRequest = DecompMeApi.Instance.RequestPresetName(scratch.preset.Value);
+				presetRequest.DataReceived += () =>
+				{
+					card.SetPresetName(presetRequest.Data.name);
+					_presetNameCache.Add(presetRequest.Data);
+				};
+			}
+			else
+			{
+				var presetName = _presetNameCache.Where(p => p.id == scratch.preset).First().name;
+				card.SetPresetName(presetName);
+			}
+
 			card.SetFunctionName(scratch.name, scratch.slug);
-			card.SetPresetName(scratch.preset.ToString()); // TODO
 			card.SetUsername(scratch.GetOwnerName());
 			card.SetTimestamp(scratch.last_updated);
 			card.SetMatchPercentage(Utils.GetMatchPercentage(scratch.score, scratch.max_score));

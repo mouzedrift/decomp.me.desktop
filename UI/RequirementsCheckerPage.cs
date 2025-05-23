@@ -76,7 +76,17 @@ public partial class RequirementsCheckerPage : Control
 	private async Task<bool> IsPythonInstalledAsync()
 	{
 		_checkPythonTask.ShowProgress();
-		using var process = Utils.StartProcess("wsl", "python3 --version");
+		Process process = null;
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			process = Utils.StartProcess("wsl", "python3 --version");
+
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			process = Utils.StartProcess("python3", "--version");
+		}
+
 		if (process == null)
 		{
 			GD.PrintErr("Error checking Python requirements");

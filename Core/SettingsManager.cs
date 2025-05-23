@@ -15,7 +15,7 @@ public partial class SettingsManager : Node
 		_config = new ConfigFile();
 		if (!FileAccess.FileExists(SettingsPath))
 		{
-			var scaleFactor = CalculateViewportScaleFactor();
+			var scaleFactor = CalculateHidpiScaleFactor();
 
 			_config.SetValue("General", "scale_factor", scaleFactor);
 			//_config.SetValue("Video", "vsync", true);
@@ -78,18 +78,10 @@ public partial class SettingsManager : Node
 		_config.Save(SettingsPath);
 	}
 
-	private float CalculateViewportScaleFactor()
+	private static float CalculateHidpiScaleFactor()
 	{
-		var screenSize = DisplayServer.ScreenGetSize();
-
-		float designWidth = 1920f;
-		float designHeight = 1080f;
-
-		GD.Print($"screensize is: {screenSize}");
-		GD.Print($"design resolution is: {designWidth}x{designHeight}");
-
-		float scaleFactor = Mathf.Min((float)screenSize.X / designWidth, (float)screenSize.Y / designHeight);
-		GD.Print("scale factor is: " + scaleFactor);
+		float defaultDpi = 96f;
+		float scaleFactor = (float)DisplayServer.ScreenGetDpi() / defaultDpi;
 		return scaleFactor;
 	}
 }
