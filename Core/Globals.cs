@@ -1,6 +1,8 @@
 using Godot;
 using OmniSharp.Extensions.LanguageServer.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client;
+using OmniSharp.Extensions.LanguageServer.Protocol.Document;
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,13 +57,9 @@ public partial class Globals : Node
 
 	private async Task StartClangdAsync()
 	{
-		// TODO: dont hardcode
-		/*
-		string clangdPath = "C:\\Users\\mouzedrift\\Downloads\\clangd_20.1.0\\bin\\clangd.exe";
-
 		ClangdProcess = new Process();
-		ClangdProcess.StartInfo.FileName = clangdPath;
-		ClangdProcess.StartInfo.Arguments = "--log=verbose";
+		ClangdProcess.StartInfo.FileName = "clangd";
+		ClangdProcess.StartInfo.Arguments = "--background-index --all-scopes-completion";
 		ClangdProcess.StartInfo.RedirectStandardInput = true;
 		ClangdProcess.StartInfo.RedirectStandardOutput = true;
 		ClangdProcess.StartInfo.UseShellExecute = false;
@@ -69,17 +67,21 @@ public partial class Globals : Node
 
 		ClangdProcess.Start();
 
-		LanguageClient = await OmniSharp.Extensions.LanguageServer.Client.LanguageClient.From(
-			new LanguageClientOptions()
-			.WithInput(ClangdProcess.StandardOutput.BaseStream)
-			.WithOutput(ClangdProcess.StandardInput.BaseStream)
-			.WithInitializationOptions(new { }));
+		var options = new LanguageClientOptions();
+		options.WithInput(ClangdProcess.StandardOutput.BaseStream)
+		.WithOutput(ClangdProcess.StandardInput.BaseStream)
+		.WithInitializationOptions(new { }).OnPublishDiagnostics(diagnosticsParams =>
+		{
+			foreach (var diag in diagnosticsParams.Diagnostics)
+			{
+				GD.Print($"{diag.Source} {diag.Severity}: {diag.Message} at {diag.Range.Start.Line}:{diag.Range.Start.Character}");
+			}
+		});
 
+		LanguageClient = await OmniSharp.Extensions.LanguageServer.Client.LanguageClient.From(options);
 		GD.Print("Clangd started!");
-		*/
+
 	}
-
-
 
 	private static async Task<string> RunPythonAsync(string command)
 	{

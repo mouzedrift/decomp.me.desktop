@@ -124,6 +124,7 @@ public partial class ScratchPage : Control
 			var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
 			_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
 			Directory.CreateDirectory(_scratchDir);
+			File.WriteAllText(_scratchDir.PathJoin("code.c"), "#include \"ctx.c\"\n#include \"src.c\"");
 
 			GetNode<Label>("VBoxContainer/Header/HBoxContainer/UsernameLabel").Text = scratch.GetOwnerName();
 			GetNode<Label>("VBoxContainer/Header/HBoxContainer/FunctionNameLabel").Text = scratch.name;
@@ -141,10 +142,12 @@ public partial class ScratchPage : Control
 			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit").Text = scratch.source_code;
 			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit").Text = scratch.context;
 
+			_ctxCodeEdit.DidOpenTextDocument(_scratchDir);
 			_ctxCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
 			};
+			_srcCodeEdit.DidOpenTextDocument(_scratchDir);
 			_srcCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
@@ -264,12 +267,8 @@ public partial class ScratchPage : Control
 
 		var ctxFilePath = Path.Combine(_scratchDir, "ctx.c");
 		ctxEntry.ExtractToFile(ctxFilePath, true);
-		var codeFilePath = Path.Combine(_scratchDir, "code.c");
+		var codeFilePath = Path.Combine(_scratchDir, "src.c");
 		codeEntry.ExtractToFile(codeFilePath, true);
-
-		string sourceCode = File.ReadAllText(codeFilePath);
-		sourceCode = "#include \"ctx.c\"\n" + sourceCode;
-		File.WriteAllText(codeFilePath, sourceCode);
 
 		var json = await Globals.RunAsmDiffAsync(_currentScratch.name);
 		var diffs = Globals.ParseAsmDifferJson(json);
@@ -339,7 +338,6 @@ public partial class ScratchPage : Control
 
 		_compilerOutputPanel.SetCompilerOutput(stdout);
 		_compilerRunning = false;
-		GD.Print("compiler finished with exit code " + process.ExitCode);
 		process.Dispose();
 	}
 }

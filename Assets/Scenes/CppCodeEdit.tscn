@@ -19,24 +19,6 @@ theme_override_fonts/font = SubResource("SystemFont_w84fy")
 theme_override_font_sizes/font_size = 13
 theme_override_colors/line_number_color = Color(0.466181, 0.466181, 0.466181, 1)
 theme_override_colors/completion_background_color = Color(0.117647, 0.117647, 0.117647, 1)
-text = "static bool test()
-{
-    return false;
-}
-
-class foo
-{
-public:
-    void classMethod();
-    
-    int field_0;
-};
-
-void foo::classMethod()
-{
-    int test = 0;
-}
-"
 caret_blink = true
 highlight_all_occurrences = true
 highlight_current_line = true
