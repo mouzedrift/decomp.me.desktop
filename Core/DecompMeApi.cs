@@ -13,12 +13,18 @@ public partial class DecompMeApi : Node
 	public const string ApiUrl = "https://decomp.me/api";
 	public const int DefaultPageSize = 20;
 	public const int MaxPageSize = 100;
-	public const bool DebugRequests = true;
+	public const bool DebugRequests = false;
 
 	public User CurrentUser { get; private set; }
 	[Signal] public delegate void UserReadyEventHandler();
 
 #nullable enable
+
+	public class LibraryItem
+	{
+		public string name { get; set; }
+		public string version { get; set; }
+	}
 
 	public class PresetName
 	{
@@ -53,7 +59,7 @@ public partial class DecompMeApi : Node
 		public int? max_score { get; set; }
 		public bool? match_override { get; set; }
 		public string? parent { get; set; }
-		public List<string>? libraries { get; set; }
+		public List<LibraryItem>? libraries { get; set; }
 		public string? diff_label { get; set; }
 		public List<string>? diff_flags { get; set; }
 

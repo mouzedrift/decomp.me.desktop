@@ -1,11 +1,10 @@
 using DecompMeDesktop.Core;
 using DecompMeDesktop.Core.CodeEditor;
 using Godot;
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System.IO;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,77 +24,30 @@ public partial class CppCodeEdit : CodeEdit
 	private string _virtualFilePath;
 	private CancellationTokenSource _completeToken;
 	private int _docVersion = 1;
+	private CppHighlighter _cppHighlighter = new CppHighlighter();
+	private int _lastLineCount;
+	private bool _ready = false;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		if (_codeType == CodeType.None)
-		{
-			GD.PushError($"CppCodeEdit type can't be set to none!");
-		}
-
-		_savedText = Text;
-		SyntaxHighlighter = new CppHighlighter();
-		TextChanged += OnTextChanged;
+		SyntaxHighlighter = _cppHighlighter;
+		LinesEditedFrom += OnLinesEditedFrom;
 	}
 
-	public void DidOpenTextDocument(string scratchDir)
+	private async void OnLinesEditedFrom(long fromLine, long toLine)
 	{
-		// NOTE: LanguageId is overridden by the file extension of the file
-		if (_codeType == CodeType.Context)
+		if (!_ready)
 		{
-			_virtualFilePath = scratchDir.PathJoin("ctx__virtualfile__.hpp");
-		}
-		else if (_codeType == CodeType.Source)
-		{
-			_virtualFilePath = scratchDir.PathJoin("src__virtualfile__.cpp");
+			return;
 		}
 
-		Globals.Instance.LanguageClient.TextDocument.DidOpenTextDocument(new DidOpenTextDocumentParams
-		{
-			TextDocument = new TextDocumentItem
-			{
-				Uri = _virtualFilePath,
-				LanguageId = "cpp",
-				Version = _docVersion,
-				Text = _codeType == CodeType.Source ? TextWithContext() : this.Text
-			}
-		});
-	}
+		GD.Print($"on lines edited from {fromLine}-{toLine}");
 
-	private async void OnTextChanged()
-	{
-		var line = GetCaretLine();
+		var line = _codeType == CodeType.Source ? GetCaretLine() + 1 : GetCaretLine();
 		var column = GetCaretColumn();
 
-		var languageClient = Globals.Instance.LanguageClient.TextDocument;
-
-
-		//var semanticTokens = await languageClient.TextDocument.RequestSemanticTokens(
-		//new SemanticTokensParams
-		//{
-		//	TextDocument = new TextDocumentIdentifier
-		//	{
-		//		Uri = _virtualFilePath,
-		//	}
-		//});
-
-
-		//int character = 0;
-		//int semLine = 0;
-		//for (int i = 0; i < semanticTokens.Data.Length; i += 5)
-		//{
-		//	semLine += semanticTokens.Data[i];
-		//	character = (semanticTokens.Data[i] == 0) ? character + semanticTokens.Data[i + 1] : semanticTokens.Data[i + 1];
-
-		//	int length = semanticTokens.Data[i + 3];
-		//	int tokenModifiers = semanticTokens.Data[i + 4];
-
-		//	GD.Print($"semiLine: {semLine} character: {character} length: {length} tokenModifiers: {tokenModifiers}");
-		//}
-
-
-		languageClient.DidChangeTextDocument(new DidChangeTextDocumentParams
+		Globals.Instance.LanguageClient.TextDocument.DidChangeTextDocument(new DidChangeTextDocumentParams
 		{
 			TextDocument = new OptionalVersionedTextDocumentIdentifier
 			{
@@ -103,12 +55,13 @@ public partial class CppCodeEdit : CodeEdit
 				Version = ++_docVersion
 			},
 			ContentChanges = new Container<TextDocumentContentChangeEvent>(
-				new TextDocumentContentChangeEvent
-				{
-					Text = _codeType == CodeType.Source ? TextWithContext() : Text,
-				}
-			)
+		new TextDocumentContentChangeEvent
+		{
+			Text = _codeType == CodeType.Source ? TextWithContext() : this.Text
+		})
 		});
+
+		UpdateSyntaxHighlighting((int)fromLine, (int)toLine);
 
 		_completeToken?.Cancel();
 		_completeToken?.Dispose();
@@ -117,7 +70,7 @@ public partial class CppCodeEdit : CodeEdit
 
 		try
 		{
-			var completion = await languageClient.RequestCompletion(new CompletionParams
+			var completion = await Globals.Instance.LanguageClient.TextDocument.RequestCompletion(new CompletionParams
 			{
 				TextDocument = new TextDocumentIdentifier { Uri = _virtualFilePath },
 				Position = new Position(line, column),
@@ -126,7 +79,6 @@ public partial class CppCodeEdit : CodeEdit
 
 			foreach (CompletionItem item in completion.Items)
 			{
-				GD.Print(item.ToString());
 				if (item.Kind == CompletionItemKind.Method || item.Kind == CompletionItemKind.Function)
 				{
 					AddCodeCompletionOption(CodeCompletionKind.Function, item.Label, item.InsertText, null, ResourceLoader.Load("uid://d0pdc43hxgxlc"));
@@ -156,15 +108,66 @@ public partial class CppCodeEdit : CodeEdit
 		{
 
 		}
+
+		_lastLineCount = GetLineCount();
 	}
+
+	public async Task InitAsync(string scratchDir, string text)
+	{
+		// NOTE: LanguageId is overridden by the file extension of the file
+		if (_codeType == CodeType.Context)
+		{
+			//_virtualFilePath = scratchDir.PathJoin("ctx__virtualfile__.hpp");
+			_virtualFilePath = scratchDir.PathJoin("ctx__virtualfile__.hpp");
+		}
+		else if (_codeType == CodeType.Source)
+		{
+			_virtualFilePath = scratchDir.PathJoin("src__virtualfile__.cpp");
+		}
+
+		Globals.Instance.LanguageClient.TextDocument.DidOpenTextDocument(new DidOpenTextDocumentParams
+		{
+			TextDocument = new TextDocumentItem
+			{
+				Uri = _virtualFilePath,
+				LanguageId = "cpp",
+				Version = _docVersion,
+				Text = _codeType == CodeType.Source ? TextWithContext() : this.Text
+			}
+		});
+
+		if (_codeType == CodeType.None)
+		{
+			GD.PushError($"CppCodeEdit type can't be set to none!");
+		}
+		CodeCompletionPrefixes = [".", ">"];
+
+		_savedText = text;
+		Text = text;
+		_lastLineCount = GetLineCount();
+
+		//await UpdateSyntaxHighlightingAsync();
+		_ready = true;
+	}
+
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+		QueueRedraw();
 	}
 
 	public override void _Input(InputEvent @event)
 	{
+		if (Input.IsKeyPressed(Key.F2))
+		{
+			GD.Print("cleared");
+			_cppHighlighter.CallDeferred(SyntaxHighlighter.MethodName.ClearHighlightingCache);
+			_cppHighlighter.ClearHighlightingCache();
+			_cppHighlighter.UpdateCache();
+			QueueRedraw();
+		}
+
 		//if (Input.IsKeyPressed(Key.Period))
 		//{
 		//	EmitSignalCodeCompletionRequested();
@@ -215,5 +218,42 @@ public partial class CppCodeEdit : CodeEdit
 	public string TextWithContext()
 	{
 		return "#include \"ctx.c\"\n" + Text;
+	}
+
+	private void UpdateSyntaxHighlighting(int startLine, int endLine)
+	{
+		var semanticTokens = Globals.Instance.LanguageClient.TextDocument.RequestSemanticTokensFull(
+		new SemanticTokensParams
+		{
+			TextDocument = new TextDocumentIdentifier
+			{
+				Uri = _virtualFilePath,
+			}
+		}).GetAwaiter().GetResult(); // i wish i could make this async but godot's syntaxhighlighter just wont play nicely
+
+		int currentLine = 0;
+		int currentColumn = 0;
+
+	    var legend = Globals.Instance.LanguageClient.TextDocument.ServerSettings.Capabilities.SemanticTokensProvider.Legend;
+		var lineDiff = GetLineCount() - _lastLineCount;
+		_cppHighlighter.ClearHighlightingCache();
+		for (int i = 0; i < semanticTokens.Data.Length; i += 5)
+		{
+			int deltaLine = semanticTokens.Data[i];
+			int deltaStart = semanticTokens.Data[i + 1];
+			int length = semanticTokens.Data[i + 2];
+			int tokenType = semanticTokens.Data[i + 3];
+			int tokenModifiers = semanticTokens.Data[i + 4];
+
+			currentLine += deltaLine;
+			currentColumn = (deltaLine == 0) ? currentColumn + deltaStart : deltaStart;
+
+			string tokenTypeName = legend.TokenTypes.ElementAt(tokenType);
+
+			Color color = CppHighlighter.TokenTypeToColor(tokenTypeName);
+
+			_cppHighlighter.AddColorRange(_codeType == CodeType.Source ? (currentLine - 1): currentLine, currentColumn, currentColumn + length, color);
+		}
+		_cppHighlighter.ColorKeywords();
 	}
 }

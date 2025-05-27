@@ -139,15 +139,12 @@ public partial class ScratchPage : Control
 			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/CreatedRichTextLabel5").Text = $"Created: {scratch.GetCreationTime()}";
 			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ModifiedRichTextLabel6").Text = $"Modified: {scratch.GetLastUpdatedTime()}";
 
-			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Source Code/CodeEdit").Text = scratch.source_code;
-			GetNode<CodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit").Text = scratch.context;
-
-			_ctxCodeEdit.DidOpenTextDocument(_scratchDir);
+			_ctxCodeEdit.InitAsync(_scratchDir, scratch.context);
 			_ctxCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
 			};
-			_srcCodeEdit.DidOpenTextDocument(_scratchDir);
+			_srcCodeEdit.InitAsync(_scratchDir, scratch.source_code);
 			_srcCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
