@@ -19,8 +19,19 @@ public partial class DecompMeApi : Node
 	[Signal] public delegate void UserReadyEventHandler();
 
 	private JsonRequest<User> _userRequestNode;
+	public enum ScratchRequestType
+	{
+		Url,
+		Slug
+	}
 
 #nullable enable
+
+	public class SearchResult
+	{
+		public string? type { get; set; }
+		public object? item { get; set; }
+	}
 
 	public class LibraryItem
 	{
@@ -190,6 +201,7 @@ public partial class DecompMeApi : Node
 				{
 					GD.Print("JsonRequest content is not application/json");
 					GD.Print(body.GetStringFromUtf8());
+					QueueFree();
 					return;
 				}
 
@@ -267,10 +279,11 @@ public partial class DecompMeApi : Node
 		return httpRequest;
 	}
 
-	public JsonRequest<ScratchListItem> RequestScratch(string url)
+	public JsonRequest<ScratchListItem> RequestScratch(string input, ScratchRequestType requestType = ScratchRequestType.Url)
 	{
 		var httpRequest = new JsonRequest<ScratchListItem>();
 		AddChild(httpRequest);
+		string url = requestType == ScratchRequestType.Url ? input : $"{ApiUrl}/scratch/{input}";
 		httpRequest.Request(url);
 		return httpRequest;
 	}
@@ -365,6 +378,23 @@ public partial class DecompMeApi : Node
 		var httpRequest = new JsonRequest<PresetName>();
 		AddChild(httpRequest);
 		httpRequest.Request($"{ApiUrl}/preset/{id}/name");
+		return httpRequest;
+	}
+
+	public JsonRequest<List<SearchResult>> RequestSearch(string search, int pageSize = 5)
+	{
+		VerifyPageSize(pageSize);
+		var httpRequest = new JsonRequest<List<SearchResult>>();
+		AddChild(httpRequest);
+
+		string requestStr = $"{ApiUrl}/search?";
+		requestStr += $"search={search}";
+		if (search != "")
+		{
+			requestStr += $"&page_size={pageSize}";
+		}
+
+		httpRequest.Request(requestStr);
 		return httpRequest;
 	}
 

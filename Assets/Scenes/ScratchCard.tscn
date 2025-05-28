@@ -37,10 +37,16 @@ layout_mode = 2
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="PlatformTextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_right = 4
+
+[node name="PlatformTextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 texture = ExtResource("1_jcbrb")
-expand_mode = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="FunctionNameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://ttvnatwkeuqv"]
+[gd_scene load_steps=3 format=3 uid="uid://ttvnatwkeuqv"]
 
 [ext_resource type="Script" uid="uid://dkr8qihw6xh3b" path="res://UI/AsmDiffPanel.cs" id="1_qcnq0"]
+[ext_resource type="FontFile" uid="uid://b8m841trm77ut" path="res://Assets/Resources/Font/NotoSansMono-Regular.ttf" id="2_inbni"]
 
 [node name="AsmDiffPanel" type="HSplitContainer" node_paths=PackedStringArray("_targetEdit", "_currentEdit", "_richTextLabel")]
 anchors_preset = 15
@@ -39,6 +40,8 @@ theme_override_colors/background_color = Color(0.0980392, 0.0901961, 0.0980392, 
 theme_override_colors/font_readonly_color = Color(0.87451, 0.87451, 0.87451, 1)
 theme_override_colors/selection_color = Color(0.0196078, 0.223529, 0.639216, 1)
 theme_override_constants/line_spacing = -4
+theme_override_fonts/font = ExtResource("2_inbni")
+theme_override_font_sizes/font_size = 14
 editable = false
 context_menu_enabled = false
 emoji_menu_enabled = false
@@ -52,6 +55,8 @@ theme_override_colors/background_color = Color(0.0980392, 0.0901961, 0.0980392, 
 theme_override_colors/font_readonly_color = Color(0.87451, 0.87451, 0.87451, 1)
 theme_override_colors/selection_color = Color(0.0196078, 0.223529, 0.639216, 1)
 theme_override_constants/line_spacing = -4
+theme_override_fonts/font = ExtResource("2_inbni")
+theme_override_font_sizes/font_size = 14
 editable = false
 context_menu_enabled = false
 emoji_menu_enabled = false

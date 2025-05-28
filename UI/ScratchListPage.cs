@@ -131,6 +131,7 @@ public partial class ScratchListPage : Node
 				card.SetPresetName(presetName);
 			}
 
+			card.SetPlatformImage(scratch.platform);
 			card.SetFunctionName(scratch.name, scratch.slug);
 			card.SetUsername(scratch.GetOwnerName());
 			card.SetTimestamp(scratch.last_updated);

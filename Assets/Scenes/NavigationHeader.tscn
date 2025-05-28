@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://pscjob0u0d2d"]
+[gd_scene load_steps=5 format=3 uid="uid://pscjob0u0d2d"]
 
 [ext_resource type="PackedScene" uid="uid://bt0e320ks2y6w" path="res://Assets/Scenes/HomeButton.tscn" id="1_0nfxb"]
 [ext_resource type="Texture2D" uid="uid://dwjidbg3gr5v1" path="res://Assets/Images/purplefrog.svg" id="1_7q8nx"]
 [ext_resource type="Script" uid="uid://wn8a8jmv45x6" path="res://UI/NavigationHeader.cs" id="1_ee2li"]
+[ext_resource type="PackedScene" uid="uid://bivlcn4vck6eo" path="res://Assets/Scenes/SearchComponent.tscn" id="3_uaewa"]
 
 [node name="NavigationHeader" type="MarginContainer"]
 custom_minimum_size = Vector2(0, 48)
@@ -24,6 +25,13 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+
+[node name="SearchComponent" parent="HBoxContainer/MarginContainer" instance=ExtResource("3_uaewa")]
+layout_mode = 2
 
 [node name="Spacer" type="Control" parent="HBoxContainer"]
 layout_mode = 2

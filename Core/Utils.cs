@@ -199,6 +199,11 @@ public class Utils
 		return $"{percentage:0.00}%";
 	}
 
+	public static string GetMatchPercentage(DecompMeApi.ScratchListItem scratch)
+	{
+		return GetMatchPercentage(scratch.score, scratch.max_score);
+	}
+
 	public static T DeepCopy<T>(T obj)
 	{
 		T copy = default;
@@ -213,5 +218,28 @@ public class Utils
 		}
 
 		return copy;
+	}
+
+	public static Texture2D GetPlatformIcon(string platformName)
+	{
+		return platformName switch
+		{
+			"dreamcast" => ResourceLoader.Load<Texture2D>("uid://beopy5d1n44j1"),
+			"gba" => ResourceLoader.Load<Texture2D>("uid://d1ulihwptl40j"),
+			"gc_wii" => ResourceLoader.Load<Texture2D>("uid://duo0k71l0r2tj"),
+			"irix" => ResourceLoader.Load<Texture2D>("uid://dhv01x8dbmph7"),
+			"macosx" => ResourceLoader.Load<Texture2D>("uid://c6nmnekvq0ais"),
+			"msdos" => ResourceLoader.Load<Texture2D>("uid://c5bljl08pvu46"),
+			"n3ds" => ResourceLoader.Load<Texture2D>("uid://ni2mujbnmckf"),
+			"n64" => ResourceLoader.Load<Texture2D>("uid://d0rhv7t0rncr3"),
+			"nds_arm9" => ResourceLoader.Load<Texture2D>("uid://cy20ub1v0k2ji"),
+			"switch" => ResourceLoader.Load<Texture2D>("uid://dm4frdybyo5tm"),
+			"ps1" => ResourceLoader.Load<Texture2D>("uid://dnvdwxif85cn3"),
+			"ps2" => ResourceLoader.Load<Texture2D>("uid://b1s84rsbv828g"),
+			"psp" => ResourceLoader.Load<Texture2D>("uid://cp23ndfa2ys0b"),
+			"saturn" => ResourceLoader.Load<Texture2D>("uid://cn76qvj15jndx"),
+			"win32" => ResourceLoader.Load<Texture2D>("uid://dkxy8fhnqwxnd"),
+			_ => ResourceLoader.Load<Texture2D>("uid://d2iapnf8j0gmd") // unknown icon
+		};
 	}
 }

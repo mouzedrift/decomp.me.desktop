@@ -1,9 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://bpudcsy1w1nsi"]
 
 [ext_resource type="Script" uid="uid://dcus2binv2wq8" path="res://UI/CppCodeEdit.cs" id="1_agrdf"]
-
-[sub_resource type="SystemFont" id="SystemFont_88h40"]
-font_names = PackedStringArray("Cascadia Mono")
+[ext_resource type="FontFile" uid="uid://b8m841trm77ut" path="res://Assets/Resources/Font/NotoSansMono-Regular.ttf" id="1_f5hm3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_88h40"]
 bg_color = Color(0.121569, 0.121569, 0.121569, 1)
@@ -27,7 +25,7 @@ grow_vertical = 2
 theme_override_colors/word_highlighted_color = Color(0.14902, 0.309804, 0.470588, 1)
 theme_override_colors/background_color = Color(0.117647, 0.117647, 0.117647, 1)
 theme_override_colors/selection_color = Color(0.14902, 0.309804, 0.470588, 1)
-theme_override_fonts/font = SubResource("SystemFont_88h40")
+theme_override_fonts/font = ExtResource("1_f5hm3")
 theme_override_font_sizes/font_size = 13
 theme_override_colors/line_number_color = Color(0.466181, 0.466181, 0.466181, 1)
 theme_override_colors/completion_background_color = Color(0.121569, 0.121569, 0.121569, 1)

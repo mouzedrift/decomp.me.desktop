@@ -1,7 +1,29 @@
-[gd_scene format=3 uid="uid://bivlcn4vck6eo"]
+[gd_scene load_steps=3 format=3 uid="uid://bivlcn4vck6eo"]
 
-[node name="SearchComponent" type="TextEdit"]
-offset_right = 162.0
+[ext_resource type="Script" uid="uid://mxo1o78mgjie" path="res://UI/SearchComponent.cs" id="1_qu2q4"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qu2q4"]
+
+[node name="SearchComponent" type="LineEdit"]
+custom_minimum_size = Vector2(360, 0)
+offset_right = 360.0
 offset_bottom = 44.0
 size_flags_horizontal = 4
+focus_mode = 1
+theme_override_colors/font_placeholder_color = Color(0.933333, 0.933333, 0.941176, 1)
+theme_override_colors/font_color = Color(0.933333, 0.933333, 0.941176, 1)
+theme_override_styles/focus = SubResource("StyleBoxEmpty_qu2q4")
 placeholder_text = "Search decomp.me"
+context_menu_enabled = false
+emoji_menu_enabled = false
+flat = true
+caret_blink = true
+script = ExtResource("1_qu2q4")
+
+[node name="PopupMenu" type="PopupMenu" parent="."]
+theme_override_constants/icon_max_width = 16
+allow_search = false
+
+[node name="SearchTimer" type="Timer" parent="."]
+wait_time = 0.3
+one_shot = true

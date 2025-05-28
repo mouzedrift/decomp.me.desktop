@@ -1,4 +1,7 @@
-[gd_resource type="SystemFont" format=3 uid="uid://cftr1wakihslj"]
+[gd_resource type="SystemFont" load_steps=2 format=3 uid="uid://cftr1wakihslj"]
+
+[ext_resource type="FontFile" uid="uid://b8m841trm77ut" path="res://Assets/Resources/Font/NotoSansMono-Regular.ttf" id="1_vlwsx"]
 
 [resource]
-font_names = PackedStringArray("Segoe UI", "Sans-Serif", "Arial")
+fallbacks = Array[Font]([ExtResource("1_vlwsx")])
+font_names = PackedStringArray("Segoe UI")

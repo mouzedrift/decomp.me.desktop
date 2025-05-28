@@ -7,12 +7,18 @@ namespace DecompMeDesktop.UI;
 public partial class ScratchCard : PanelContainer
 {
 	[Export] private LinkLabel _functionNameLabel;
-	public void SetPlatformImage(Texture2D texture) => GetNode<TextureRect>("MarginContainer/VBoxContainer/HBoxContainer/PlatformTextureRect").Texture = texture;
+	public void SetPlatformImage(string platformName)
+	{
+		var iconTexture = Utils.GetPlatformIcon(platformName);
+		GetNode<TextureRect>("MarginContainer/VBoxContainer/HBoxContainer/MarginContainer/PlatformTextureRect").Texture = iconTexture;
+	}
+
 	public void SetFunctionName(string name, string scratchSlug = "")
 	{
 		_functionNameLabel.Text = name;
 		_scratchSlug = scratchSlug;
 	}
+
 	public void SetPresetName(string name) => GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer2/PresetNameLabel").Text = name;
 	public void SetMatchPercentage(string percent) => GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer2/MatchPercentageLabel").Text = percent;
 	public void SetUsername(string username) => GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer/UsernameLabel").Text = username;

@@ -113,6 +113,37 @@ public partial class CppCodeEdit : CodeEdit
 
 	public override void _GuiInput(InputEvent @event)
 	{
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
+		{
+			if (keyEvent.AltPressed && keyEvent.ShiftPressed)
+			{
+				if (keyEvent.Keycode == Key.Up)
+				{
+					AddCaretAtCarets(false);
+				}
+				else if (keyEvent.Keycode == Key.Down)
+				{
+					AddCaretAtCarets(true);
+				}
+			}
+			else if (keyEvent.AltPressed)
+			{
+				if (keyEvent.Keycode == Key.Up)
+				{
+					MoveLinesUp();
+				}
+				else if (keyEvent.Keycode == Key.Down)
+				{
+					MoveLinesDown();
+				}
+			}
+
+			if (keyEvent.Keycode == Key.Escape && GetCaretCount() > 1)
+			{
+				RemoveSecondaryCarets();
+			}
+		}
+
 		if (Input.IsActionJustPressed("code_search"))
 		{
 			_searchBoxParent.Show();
