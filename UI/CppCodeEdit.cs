@@ -47,7 +47,6 @@ public partial class CppCodeEdit : CodeEdit
 	private CppHighlighter _cppHighlighter = new CppHighlighter();
 	private bool _ready = false;
 	Vector2I _searchPos;
-	private bool _codeCompletionAccepted;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -110,6 +109,14 @@ public partial class CppCodeEdit : CodeEdit
 
 		// this needs to be here or else AddCodeCompletionOption() doesn't work sometimes... don't ask me why
 		CodeCompletionPrefixes = [".", ">"];
+	}
+
+	public override void _GuiInput(InputEvent @event)
+	{
+		if (Input.IsActionJustPressed("code_search"))
+		{
+			_searchBoxParent.Show();
+		}
 	}
 
 	private void SelectSearchResult(SearchResult searchResult)
@@ -232,13 +239,6 @@ public partial class CppCodeEdit : CodeEdit
 
 		if (!_ready)
 		{
-			return;
-		}
-
-		GD.Print("on lines edited from");
-		if (_codeCompletionAccepted)
-		{
-			_codeCompletionAccepted = false;
 			return;
 		}
 
