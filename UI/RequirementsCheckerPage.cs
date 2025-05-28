@@ -16,10 +16,9 @@ public partial class RequirementsCheckerPage : Control
 	private readonly PackedScene ScratchListPage = ResourceLoader.Load<PackedScene>("uid://dgrhdqs4p8wr3");
 
 	private VBoxContainer _taskList;
-	private TaskProgressBar _checkPythonTask;
-	private TaskProgressBar _createVenvTask;
-	private TaskProgressBar _getMissingDepsTask;
-	private TaskProgressBar _installDepsTask;
+	private Button _okButton;
+
+	private List<TaskProgressBar> _tasks = [];
 
 	private static readonly List<string> PythonRequirements = new List<string>()
 	{
@@ -34,14 +33,25 @@ public partial class RequirementsCheckerPage : Control
 	public override async void _Ready()
 	{
 		_taskList = GetNode<VBoxContainer>("VBoxContainer2/VBoxContainer");
+		_okButton = GetNode<Button>("VBoxContainer2/VBoxContainer/OkButton");
 
-		_checkPythonTask = AddTask("Check for existing python installation...");
-		_createVenvTask = AddTask("Creating python venv...");
-		_getMissingDepsTask = AddTask("Retrieving missing dependencies...");
-		_installDepsTask = AddTask("Installing missing dependencies...");
+		_okButton.Pressed += () =>
+		{
+			SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+		};
 
-		await CheckAllDependenciesAsync();
-		SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+		if (SettingsManager.Instance.GetValue("Setup", "dependencies_installed").AsBool())
+		{
+			SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+			return;
+		}
+
+		AddTask("Checking for existing python installation...", IsPythonInstalledAsync);
+		AddTask("Creating python venv...", CreatePythonVenvAsync);
+		AddTask("Installing missing python dependencies...", InstallMissingPythonPackagesAsync);
+		AddTask("Checking for clangd...", CheckClangdAsync);
+
+		await RunAllTasksAsync();
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -49,33 +59,54 @@ public partial class RequirementsCheckerPage : Control
 	{
 	}
 
-	private TaskProgressBar AddTask(string description)
+	private void AddTask(string description, Func<Task<bool>> work)
 	{
 		var task = TaskProgressbar.Instantiate<TaskProgressBar>();
 		_taskList.AddChild(task);
 		task.SetTaskDescription(description);
-		return task;
+		_okButton.GetParent().MoveChild(_okButton, -1);
+		task.WorkFunc = work;
+		_tasks.Add(task);
 	}
 
-	public async Task CheckAllDependenciesAsync()
+	public async Task RunAllTasksAsync()
 	{
-		var globalPythonVenvDir = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
-		if (await IsPythonInstalledAsync())
+		bool anyFailed = false;
+		foreach (var task in _tasks)
 		{
-			await CreatePythonVenvAsync();
-			var missingPythonPackages = await GetMissingPythonPackagesAsync();
-			await InstallPythonPackagesAsync(missingPythonPackages);
-			GD.Print("All requirements met.");
+			task.ShowProgress();
+			var ok = await task.WorkFunc();
+			if (!ok)
+			{
+				task.MarkAsFailed();
+				anyFailed = true;
+			}
+			else
+			{
+				task.MarkAsDone();
+			}
+		}
+
+		if (anyFailed)
+		{
+			GD.Print("One or more requirement has not been satisfied.");
 		}
 		else
 		{
-			GD.PrintErr("Python version >= 3.6 is required.");
+			_okButton.Disabled = false;
+			SettingsManager.Instance.SetValue("Setup", "dependencies_installed", true);
+			GD.Print("All requirements met.");
 		}
+	}
+
+	private async Task<bool> CheckClangdAsync()
+	{
+		using var process = Utils.StartProcess("clangd");
+		return process != null;
 	}
 
 	private async Task<bool> IsPythonInstalledAsync()
 	{
-		_checkPythonTask.ShowProgress();
 		Process process = null;
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
@@ -96,6 +127,7 @@ public partial class RequirementsCheckerPage : Control
 		string output = await process.StandardOutput.ReadToEndAsync();
 		string error = await process.StandardError.ReadToEndAsync();
 		await process.WaitForExitAsync();
+		process.Dispose();
 
 		string versionOutput = !string.IsNullOrWhiteSpace(output) ? output : error;
 		var match = Regex.Match(versionOutput, @"Python (\d+)\.(\d+)\.(\d+)");
@@ -106,10 +138,6 @@ public partial class RequirementsCheckerPage : Control
 			GD.Print($"Python version {major}.{minor} is installed.");
 
 			var isCorrectVersion = major > 3 || (major == 3 && minor >= 6);
-			if (isCorrectVersion)
-			{
-				_checkPythonTask.MarkAsDone();
-			}
 			return isCorrectVersion;
 		}
 
@@ -118,7 +146,6 @@ public partial class RequirementsCheckerPage : Control
 
 	private async Task<List<string>> GetMissingPythonPackagesAsync()
 	{
-		_getMissingDepsTask.ShowProgress();
 		var pythonExe = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
 		Process process = null;
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -160,19 +187,17 @@ public partial class RequirementsCheckerPage : Control
 			}
 		}
 
-		_getMissingDepsTask.MarkAsDone();
 		return missingPackages;
 	}
 
-	private async Task<bool> InstallPythonPackagesAsync(List<string> packages)
+	private async Task<bool> InstallMissingPythonPackagesAsync()
 	{
+		var packages = await GetMissingPythonPackagesAsync();
 		if (packages == null || packages.Count == 0)
 		{
-			_installDepsTask.MarkAsDone();
 			return true;
 		}
 
-		_installDepsTask.ShowProgress();
 		// Combine all package names into one string
 		string joinedPackages = string.Join(" ", packages);
 		Process process = null;
@@ -201,19 +226,12 @@ public partial class RequirementsCheckerPage : Control
 		}
 
 		var ok = process.ExitCode == 0;
-		GD.Print(ok);
-		if (ok)
-		{
-			_installDepsTask.MarkAsDone();
-		}
-
 		process.Dispose();
 		return ok;
 	}
 
 	private async Task<bool> CreatePythonVenvAsync()
 	{
-		_createVenvTask.ShowProgress();
 		var globalPythonVenvDir = ProjectSettings.GlobalizePath(AppDirs.PythonVenv);
 		Process process = new Process();
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -235,9 +253,8 @@ public partial class RequirementsCheckerPage : Control
 		string error = await process.StandardError.ReadToEndAsync();
 
 		await process.WaitForExitAsync();
-
+		process.Dispose();
 		GD.Print($"Successfully created python venv at: {globalPythonVenvDir}");
-		_createVenvTask.MarkAsDone();
 		return true;
 	}
 }

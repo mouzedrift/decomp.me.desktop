@@ -1,10 +1,12 @@
 using Godot;
 using System;
+using System.Threading.Tasks;
 
 namespace DecompMeDesktop.UI;
 
 public partial class TaskProgressBar : HBoxContainer
 {
+	public Func<Task<bool>> WorkFunc { get; set; }
 	private Label _taskLabel;
 	private ProgressBar _progressBar;
 	private TextureRect _checkTextureRect;
@@ -46,8 +48,17 @@ public partial class TaskProgressBar : HBoxContainer
 
 	public void MarkAsDone()
 	{
+		_checkTextureRect.Texture = ResourceLoader.Load<Texture2D>("uid://qhubu8k8d4n0");
 		_checkTextureRect.SelfModulate = Colors.White;
 		_progressBar.Indeterminate = false;
 		_progressBar.Value = 100;
+	}
+
+	public void MarkAsFailed()
+	{
+		_checkTextureRect.Texture = ResourceLoader.Load<Texture2D>("uid://dg20e33s7h7x1");
+		_checkTextureRect.SelfModulate = Colors.White;
+		_progressBar.Indeterminate = false;
+		_progressBar.Value = 0;
 	}
 }

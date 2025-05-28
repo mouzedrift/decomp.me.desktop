@@ -27,7 +27,7 @@ public class ColorTheme
 	public static Color EnumMember { get; } = Color.FromHtml("#B8D7A3");
 	public static Color Blue { get; } = Color.FromHtml("#569CD6");
 	public static Color Pink { get; } = Color.FromHtml("#C586C0");
-	public static Color Preprocessor { get; } = new Color(0.8f, 0.8f, 0.8f);
+	public static Color Preprocessor { get; } = Color.FromHtml("#9B9B9B");
 	public static Color Number { get; } = Color.FromHtml("#B5CEA8");
 	public static Color Comment { get; } = Color.FromHtml("#6A9955");
 	public static Color String { get; } = Color.FromHtml("#CE9178");
@@ -133,16 +133,71 @@ public partial class CppHighlighter : SyntaxHighlighter
 		{ "wchar_t", ColorTheme.Blue},
 		{ "while", ColorTheme.Pink},
 		{ "xor", ColorTheme.Blue},
-		{ "xor_eq", ColorTheme.Blue}
+		{ "xor_eq", ColorTheme.Blue},
+		{ "__stdcall", ColorTheme.Blue},
+		{ "__int8", ColorTheme.Blue},
+		{ "__int16", ColorTheme.Blue},
+		{ "__int32", ColorTheme.Blue},
+		{ "__int64", ColorTheme.Blue},
+		{ "#pragma", ColorTheme.Preprocessor},
+		{ "#if", ColorTheme.Preprocessor},
+		{ "#elif", ColorTheme.Preprocessor},
+		{ "#endif", ColorTheme.Preprocessor},
+		{ "#define", ColorTheme.Preprocessor},
+		{ "#else", ColorTheme.Preprocessor},
+		{ "#include", ColorTheme.Preprocessor},
 	};
 	private System.Collections.Generic.Dictionary<int, List<ColorRange>> _lineColorCache = new();
 	private System.Collections.Generic.Dictionary<int, List<ColorRange>> _lineColorQueue = new();
 
-	Regex _keywordRegex = new Regex(@"\b(" + string.Join("|", KeywordColorsInternal.Keys.Select(Regex.Escape)) + @")\b", RegexOptions.Compiled);
+	private readonly Regex _keywordRegex = new Regex(@"(?<!\w)(" + string.Join("|", KeywordColorsInternal.Keys.Select(Regex.Escape)) + @")(?!\w)", RegexOptions.Compiled);
 
 	public override Dictionary _GetLineSyntaxHighlighting(int line)
 	{
 		Dictionary dict = new Dictionary();
+
+		string lineStr = GetTextEdit().GetLine(line);
+		var lineCommentIdx = lineStr.IndexOf("//");
+		var multilineCommentStartIdx = lineStr.IndexOf("/*");
+		if (multilineCommentStartIdx != -1)
+		{
+			for (int i = line; i < GetTextEdit().GetLineCount(); i++)
+			{
+				var multilineCommentEndIdx = GetTextEdit().GetLine(i).IndexOf("*/");
+				if (multilineCommentEndIdx != -1)
+				{
+					AddColorRange(i, 0, multilineCommentEndIdx + 2, ColorTheme.Comment);
+					break;
+				}
+				else
+				{
+					AddColorRange(i, multilineCommentStartIdx, 0, ColorTheme.Comment);
+				}
+			}
+		}
+		else if (lineCommentIdx != -1)
+		{
+			AddColorRange(line, lineCommentIdx, 0, ColorTheme.Comment);
+		}
+		else
+		{
+			foreach (Match match in _keywordRegex.Matches(lineStr))
+			{
+				var name = match.Value;
+				if (!KeywordColorsInternal.TryGetValue(name, out var color))
+				{
+					continue;
+				}
+
+				if (lineCommentIdx != -1 && lineCommentIdx <= match.Index)
+				{
+					break;
+				}
+
+				AddColorRange(line, match.Index, match.Index + name.Length, color);
+			}
+		}
+
 		if (_lineColorCache.TryGetValue(line, out var ranges))
 		{
 			// godot requires the nested dicts to be sorted starting from the lowest value
@@ -177,48 +232,7 @@ public partial class CppHighlighter : SyntaxHighlighter
 
 	public void ColorKeywords()
 	{
-		bool inMultilineComment = false;
-		for (int i = 0; i < GetTextEdit().GetLineCount(); i++)
-		{
-			string line = GetTextEdit().GetLine(i);
-			var lineCommentIdx = line.IndexOf("//");
-			var multilineCommentStartIdx = line.IndexOf("/*");
-			if (multilineCommentStartIdx != -1 || inMultilineComment)
-			{
-				inMultilineComment = true;
-				var multilineCommentEndIdx = line.IndexOf("*/");
-				if (multilineCommentEndIdx != -1)
-				{
-					AddColorRange(i, 0, multilineCommentEndIdx + 2, ColorTheme.Comment);
-					inMultilineComment = false;
-				}
-				else
-				{
-					AddColorRange(i, multilineCommentStartIdx, 0, ColorTheme.Comment);
-					continue;
-				}
-			}
-			else if (lineCommentIdx != -1)
-			{
-				AddColorRange(i, lineCommentIdx, 0, ColorTheme.Comment);
-			}
 
-			foreach (Match match in _keywordRegex.Matches(line))
-			{
-				var name = match.Value;
-				if (!KeywordColorsInternal.TryGetValue(name, out var color))
-				{
-					continue;
-				}
-				
-				if (lineCommentIdx != -1 && lineCommentIdx <= match.Index)
-				{
-					break;
-				}
-
-				AddColorRange(i, match.Index, match.Index + name.Length, color);
-			}
-		}
 	}
 
 	public void AddColorRange(int line, int columnStart, int columnEnd, Color color)
@@ -251,7 +265,7 @@ public partial class CppHighlighter : SyntaxHighlighter
 			"enum" => ColorTheme.Enum,
 			"enumMember" => ColorTheme.EnumMember,
 			"comment" => ColorTheme.Comment,
-			_ => Colors.Crimson
+			_ => ColorTheme.Default
 		};
 	}
 }

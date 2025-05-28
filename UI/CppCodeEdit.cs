@@ -5,13 +5,21 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static Godot.HttpRequest;
 
 namespace DecompMeDesktop.UI;
 
 public partial class CppCodeEdit : CodeEdit
 {
+	class SearchResult
+	{
+		public int Line { get; set; }
+		public int ColumnStart { get; set; }
+		public int ColumnEnd { get; set; }
+	}
 	private string _savedText;
 	public enum CodeType
 	{
@@ -21,32 +29,181 @@ public partial class CppCodeEdit : CodeEdit
 	}
 
 	[Export] private CodeType _codeType;
+	private LineEdit _searchLineEdit;
+	private Button _nextButton;
+	private Button _previousButton;
+	private LineEdit _replaceLineEdit;
+	private Button _replaceButton;
+	private Button _replaceAllButton;
+	private Button _closeButton;
+	private CheckBox _matchCaseCheckBox;
+	private CheckBox _regexpCheckBox;
+	private CheckBox _byWordCheckBox;
+	private PanelContainer _searchBoxParent;
 	private string _virtualFilePath;
 	private CancellationTokenSource _completeToken;
 	private int _docVersion = 1;
 	private CppHighlighter _cppHighlighter = new CppHighlighter();
-	private int _lastLineCount;
 	private bool _ready = false;
-
+	private bool _autocompleteKeyPressed = false;
+	Vector2I _searchPos;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		_searchLineEdit = GetNode<LineEdit>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SearchLineEdit");
+		_nextButton = GetNode<Button>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/NextButton");
+		_previousButton = GetNode<Button>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PreviousButton");
+		_replaceLineEdit = GetNode<LineEdit>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/ReplaceLineEdit");
+		_replaceButton = GetNode<Button>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/ReplaceButton");
+		_replaceAllButton = GetNode<Button>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/ReplaceAllButton");
+		_closeButton = GetNode<Button>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/CloseButton");
+		_matchCaseCheckBox = GetNode<CheckBox>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/MatchCaseCheckBox");
+		_regexpCheckBox = GetNode<CheckBox>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/RegexpCheckBox");
+		_byWordCheckBox = GetNode<CheckBox>("PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ByWordCheckBox");
+		_searchBoxParent = GetNode<PanelContainer>("PanelContainer");
+
 		SyntaxHighlighter = _cppHighlighter;
 		LinesEditedFrom += OnLinesEditedFrom;
+
+		_nextButton.Pressed += () => SearchNext();
+		_previousButton.Pressed += () => SearchPrevious();
+
+		_closeButton.Pressed += _searchBoxParent.Hide;
+
+		_replaceAllButton.Pressed += () =>
+		{
+			StringBuilder stringBuilder = new StringBuilder(Text);
+			stringBuilder.Replace(_searchLineEdit.Text, _replaceLineEdit.Text);
+			Text = stringBuilder.ToString();
+		};
+
+		_replaceButton.Pressed += () =>
+		{
+			var result = SearchNext();
+			if (result != null)
+			{
+				var oldLineStr = GetLine(result.Line);
+				var newLineStr = oldLineStr.Remove(result.ColumnStart, result.ColumnEnd - result.ColumnStart).Insert(result.ColumnStart, _replaceLineEdit.Text);
+				SetLine(result.Line, newLineStr);
+			}
+		};
+
+		_searchLineEdit.TextChanged += (string text) =>
+		{
+			var searchText = _searchLineEdit.Text;
+			var result = Search(searchText, GetSearchFlags(), 0, 0);
+			if (result.X == -1 || result.Y == -1)
+			{
+				return;
+			}
+
+			var searchResult = new SearchResult
+			{
+				Line = result.Y,
+				ColumnStart = result.X,
+				ColumnEnd = result.X + searchText.Length
+			};
+			SelectSearchResult(searchResult);
+		};
 	}
 
-	private async void OnLinesEditedFrom(long fromLine, long toLine)
+
+	private void SelectSearchResult(SearchResult searchResult)
 	{
-		if (!_ready)
+		ScrollVertical = GetScrollPosForLine(searchResult.Line);
+		Select(searchResult.Line, searchResult.ColumnStart, searchResult.Line, searchResult.ColumnEnd);
+	}
+
+	private SearchResult SearchPrevious()
+	{
+		var searchText = _searchLineEdit.Text;
+		if (searchText.Length <= 0)
 		{
-			return;
+			return null;
 		}
 
-		GD.Print($"on lines edited from {fromLine}-{toLine}");
+		var result = Search(searchText, GetSearchFlags(true), _searchPos.Y, _searchPos.X);
+		if (result.X == -1 || result.Y == -1)
+		{
+			return null;
+		}
 
-		var line = _codeType == CodeType.Source ? GetCaretLine() + 1 : GetCaretLine();
-		var column = GetCaretColumn();
+		GD.Print($"found {searchText} at line {result.Y} column {result.X}");
+		if (result.X - searchText.Length >= 0)
+		{
+			_searchPos = new Vector2I(result.X - searchText.Length, result.Y);
+		}
+		else if (result.Y - 1 >= 0)
+		{
+			_searchPos = new Vector2I(result.X, result.Y - 1);
+		}
 
+		var searchResult = new SearchResult
+		{
+			Line = result.Y,
+			ColumnStart = result.X,
+			ColumnEnd = result.X + searchText.Length
+		};
+		SelectSearchResult(searchResult);
+		return searchResult;
+	}
+
+	private SearchResult SearchNext()
+	{
+		var searchText = _searchLineEdit.Text;
+		if (searchText.Length <= 0)
+		{
+			return null;
+		}
+
+		var result = Search(searchText, GetSearchFlags(), _searchPos.Y, _searchPos.X);
+		if (result.X == -1 || result.Y == -11)
+		{
+			return null;
+		}
+
+		GD.Print($"found {searchText} at line {result.Y} column {result.X}");
+		if (result.X < result.X + searchText.Length)
+		{
+			_searchPos = new Vector2I(result.X + searchText.Length, result.Y);
+		}
+		else if (result.Y + 1 < GetLineCount())
+		{
+			_searchPos = new Vector2I(result.X, result.Y + 1);
+		}
+		ScrollVertical = GetScrollPosForLine(result.Y);
+		Select(result.Y, result.X, result.Y, result.X + searchText.Length);
+
+		var searchResult = new SearchResult
+		{
+			Line = result.Y,
+			ColumnStart = result.X,
+			ColumnEnd = result.X + searchText.Length
+		};
+		SelectSearchResult(searchResult);
+		return searchResult;
+	}
+
+	private uint GetSearchFlags(bool searchBackwards = false)
+	{
+		SearchFlags flags = 0;
+		if (_matchCaseCheckBox.ButtonPressed)
+		{
+			flags |= SearchFlags.MatchCase;
+		}
+		if (_byWordCheckBox.ButtonPressed)
+		{
+			flags |= SearchFlags.WholeWords;
+		}
+		if (searchBackwards)
+		{
+			flags |= SearchFlags.Backwards;
+		}
+		return (uint)flags;
+	}
+
+	private void DidChangeTextDocument()
+	{
 		Globals.Instance.LanguageClient.TextDocument.DidChangeTextDocument(new DidChangeTextDocumentParams
 		{
 			TextDocument = new OptionalVersionedTextDocumentIdentifier
@@ -55,13 +212,24 @@ public partial class CppCodeEdit : CodeEdit
 				Version = ++_docVersion
 			},
 			ContentChanges = new Container<TextDocumentContentChangeEvent>(
-		new TextDocumentContentChangeEvent
-		{
-			Text = _codeType == CodeType.Source ? TextWithContext() : this.Text
-		})
-		});
+			new TextDocumentContentChangeEvent
+			{
+				Text = _codeType == CodeType.Source ? TextWithContext() : this.Text
+			})});
+	}
 
-		UpdateSyntaxHighlighting((int)fromLine, (int)toLine);
+	private async void OnLinesEditedFrom(long fromLine, long toLine)
+	{
+		DidChangeTextDocument();
+		UpdateSyntaxHighlighting();
+
+		if (!_autocompleteKeyPressed || !_ready)
+		{
+			return;
+		}
+
+		var line = _codeType == CodeType.Source ? GetCaretLine() + 1 : GetCaretLine();
+		var column = GetCaretColumn() + 1;
 
 		_completeToken?.Cancel();
 		_completeToken?.Dispose();
@@ -70,12 +238,12 @@ public partial class CppCodeEdit : CodeEdit
 
 		try
 		{
-			var completion = await Globals.Instance.LanguageClient.TextDocument.RequestCompletion(new CompletionParams
+			var completion = Globals.Instance.LanguageClient.TextDocument.RequestCompletion(new CompletionParams
 			{
 				TextDocument = new TextDocumentIdentifier { Uri = _virtualFilePath },
 				Position = new Position(line, column),
-				Context = new CompletionContext { TriggerKind = CompletionTriggerKind.TriggerForIncompleteCompletions },
-			}, _completeToken.Token);
+				Context = new CompletionContext { TriggerKind = CompletionTriggerKind.Invoked }
+			}, _completeToken.Token).GetAwaiter().GetResult();
 
 			foreach (CompletionItem item in completion.Items)
 			{
@@ -87,8 +255,7 @@ public partial class CppCodeEdit : CodeEdit
 				{
 					AddCodeCompletionOption(CodeCompletionKind.Member, item.Label, item.InsertText, null, ResourceLoader.Load("uid://bsek7qnira33g"));
 				}
-				else if (item.Kind == CompletionItemKind.TypeParameter ||
-					item.Kind == CompletionItemKind.Variable)
+				else if (item.Kind == CompletionItemKind.TypeParameter || item.Kind == CompletionItemKind.Variable)
 				{
 					AddCodeCompletionOption(CodeCompletionKind.Variable, item.Label, item.InsertText, null, ResourceLoader.Load("uid://bkomvyb0gmooc"));
 				}
@@ -100,16 +267,18 @@ public partial class CppCodeEdit : CodeEdit
 				{
 					AddCodeCompletionOption(CodeCompletionKind.Enum, item.Label, item.InsertText, null, ResourceLoader.Load("uid://ccyhcr7dpcvom"));
 				}
+				else
+				{
+					continue;
+				}
+				GD.Print(item.ToString());
 			}
 
 			UpdateCodeCompletionOptions(true);
 		}
 		catch (TaskCanceledException)
 		{
-
 		}
-
-		_lastLineCount = GetLineCount();
 	}
 
 	public async Task InitAsync(string scratchDir, string text)
@@ -117,7 +286,6 @@ public partial class CppCodeEdit : CodeEdit
 		// NOTE: LanguageId is overridden by the file extension of the file
 		if (_codeType == CodeType.Context)
 		{
-			//_virtualFilePath = scratchDir.PathJoin("ctx__virtualfile__.hpp");
 			_virtualFilePath = scratchDir.PathJoin("ctx__virtualfile__.hpp");
 		}
 		else if (_codeType == CodeType.Source)
@@ -140,13 +308,11 @@ public partial class CppCodeEdit : CodeEdit
 		{
 			GD.PushError($"CppCodeEdit type can't be set to none!");
 		}
-		CodeCompletionPrefixes = [".", ">"];
 
 		_savedText = text;
 		Text = text;
-		_lastLineCount = GetLineCount();
 
-		//await UpdateSyntaxHighlightingAsync();
+		UpdateSyntaxHighlighting();
 		_ready = true;
 	}
 
@@ -154,24 +320,41 @@ public partial class CppCodeEdit : CodeEdit
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		QueueRedraw();
+	}
+
+	public override void _GuiInput(InputEvent @event)
+	{
+		if (Input.IsActionJustPressed("code_search"))
+		{
+			_searchBoxParent.Show();
+		}
+
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
+		{
+			char pressedKey = (char)keyEvent.Unicode;
+			GD.Print("pressed: " + pressedKey + " " + keyEvent.Unicode);
+			if (char.IsLetterOrDigit(pressedKey) ||
+				pressedKey == '.' || pressedKey == '>' || pressedKey == '_' || keyEvent.Keycode == Key.Shift)
+			{
+				_autocompleteKeyPressed = true;
+			}
+			else if (keyEvent.Keycode == Key.Down || keyEvent.Keycode == Key.Up ||
+					keyEvent.Keycode == Key.Enter || keyEvent.Keycode == Key.Tab)
+			{
+				_autocompleteKeyPressed = false;
+			}
+			else
+			{
+				GD.Print("cancel completion");
+				CancelCodeCompletion();
+				_autocompleteKeyPressed = false;
+			}
+		}
 	}
 
 	public override void _Input(InputEvent @event)
 	{
-		if (Input.IsKeyPressed(Key.F2))
-		{
-			GD.Print("cleared");
-			_cppHighlighter.CallDeferred(SyntaxHighlighter.MethodName.ClearHighlightingCache);
-			_cppHighlighter.ClearHighlightingCache();
-			_cppHighlighter.UpdateCache();
-			QueueRedraw();
-		}
 
-		//if (Input.IsKeyPressed(Key.Period))
-		//{
-		//	EmitSignalCodeCompletionRequested();
-		//}
 	}
 
 	public bool RequestSave(string scratchDir)
@@ -187,7 +370,6 @@ public partial class CppCodeEdit : CodeEdit
 		{
 			File.WriteAllText(scratchDir.PathJoin("ctx.c"), Text);
 			saved = true;
-
 		}
 		else if (_codeType == CodeType.Source)
 		{
@@ -220,7 +402,7 @@ public partial class CppCodeEdit : CodeEdit
 		return "#include \"ctx.c\"\n" + Text;
 	}
 
-	private void UpdateSyntaxHighlighting(int startLine, int endLine)
+	private void UpdateSyntaxHighlighting()
 	{
 		var semanticTokens = Globals.Instance.LanguageClient.TextDocument.RequestSemanticTokensFull(
 		new SemanticTokensParams
@@ -235,7 +417,6 @@ public partial class CppCodeEdit : CodeEdit
 		int currentColumn = 0;
 
 	    var legend = Globals.Instance.LanguageClient.TextDocument.ServerSettings.Capabilities.SemanticTokensProvider.Legend;
-		var lineDiff = GetLineCount() - _lastLineCount;
 		_cppHighlighter.ClearHighlightingCache();
 		for (int i = 0; i < semanticTokens.Data.Length; i += 5)
 		{
@@ -254,6 +435,5 @@ public partial class CppCodeEdit : CodeEdit
 
 			_cppHighlighter.AddColorRange(_codeType == CodeType.Source ? (currentLine - 1): currentLine, currentColumn, currentColumn + length, color);
 		}
-		_cppHighlighter.ColorKeywords();
 	}
 }

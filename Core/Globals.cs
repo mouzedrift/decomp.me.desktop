@@ -1,7 +1,10 @@
 using Godot;
 using OmniSharp.Extensions.LanguageServer.Client;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client;
+using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,7 +16,7 @@ namespace DecompMeDesktop.Core;
 public partial class Globals : Node
 {
 	public static Globals Instance { get; private set; }
-	public OmniSharp.Extensions.LanguageServer.Protocol.Client.ILanguageClient LanguageClient { get; private set; }
+	public ILanguageClient LanguageClient { get; private set; }
 	public Process ClangdProcess { get; private set; }
 
 	private static readonly List<string> LinuxRequirements = new List<string>()
@@ -73,7 +76,7 @@ public partial class Globals : Node
 				GD.Print($"{diag.Source} {diag.Severity}: {diag.Message} at {diag.Range.Start.Line}:{diag.Range.Start.Character}");
 			}
 		});
-		
+
 		LanguageClient = await OmniSharp.Extensions.LanguageServer.Client.LanguageClient.From(options);
 		GD.Print("Clangd started!");
 	}

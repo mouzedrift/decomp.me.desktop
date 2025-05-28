@@ -8,42 +8,72 @@ public partial class SettingsManager : Node
 	private const string SettingsPath = "user://settings.cfg";
 	private ConfigFile _config;
 
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest)
+		{
+			SetValue("Video", "window_resolution", GetWindow().Size);
+			SetValue("Video", "window_position", GetWindow().Position);
+			SetValue("Video", "window_screen", GetWindow().CurrentScreen);
+			GD.Print("saving config...");
+			Save();
+		}
+	}
+
 	public override void _Ready()
 	{
 		Instance = this;
 
 		_config = new ConfigFile();
-		if (!FileAccess.FileExists(SettingsPath))
-		{
-			var scaleFactor = CalculateHidpiScaleFactor();
-
-			_config.SetValue("General", "scale_factor", scaleFactor);
-			//_config.SetValue("Video", "vsync", true);
-			//_config.SetValue("Video", "resolution", new Vector2I(1280, 720));
-
-			_config.Save(SettingsPath);
-		}
-		else
+		if (FileAccess.FileExists(SettingsPath))
 		{
 			_config.Load(SettingsPath);
 		}
 
+		SetValueOptional("Setup", "dependencies_installed", false);
+
+		var scaleFactor = CalculateHidpiScaleFactor();
+		SetValueOptional("General", "scale_factor", scaleFactor);
+
+		SetValueOptional("CodeEditor", "clangd_enabled", true);
+		SetValueOptional("CodeEditor", "auto_completion", true);
+		SetValueOptional("CodeEditor", "syntax_highlighting", true);
+
+		SetValueOptional("Video", "vsync", true);
+		SetValueOptional("Video", "window_resolution", GetWindow().Size);
+		SetValueOptional("Video", "window_position", GetWindow().Position);
+		SetValueOptional("Video", "window_screen", GetWindow().CurrentScreen);
+		SetValueOptional("Video", "max_fps", 0);
+
 		GetTree().Root.ContentScaleFactor = _config.GetValue("General", "scale_factor").AsSingle();
 
-		//ApplyVideoSettings();
+		ApplyVideoSettings();
+	}
+
+	private void SetValueOptional(string section, string key, Variant value)
+	{
+		if (!HasSectionKey(section, key))
+		{
+			_config.SetValue(section, key, value);
+		}
 	}
 
 	public void ApplyVideoSettings()
 	{
 		bool vsync = _config.GetValue("Video", "vsync").AsBool();
-		Vector2I resolution = _config.GetValue("Video", "resolution").AsVector2I();
+		Vector2I resolution = _config.GetValue("Video", "window_resolution").AsVector2I();
+		Vector2I windowPos = _config.GetValue("Video", "window_position").AsVector2I();
+		int windowScreen = _config.GetValue("Video", "window_screen").AsInt32();
 
 		DisplayServer.WindowSetVsyncMode(vsync ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
 
 		if (DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Windowed)
 		{
-			DisplayServer.WindowSetSize(resolution);
-			CenterWindow(GetWindow().CurrentScreen);
+			GetWindow().Size = resolution;
+			GetWindow().Position = windowPos;
+			GetWindow().CurrentScreen = windowScreen;
+
+			//CenterWindow(GetWindow().CurrentScreen);
 		}
 	}
 
