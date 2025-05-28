@@ -71,10 +71,10 @@ public partial class Globals : Node
 		.WithOutput(ClangdProcess.StandardInput.BaseStream)
 		.WithInitializationOptions(new { }).OnPublishDiagnostics(diagnosticsParams =>
 		{
-			foreach (var diag in diagnosticsParams.Diagnostics)
-			{
-				GD.Print($"{diag.Source} {diag.Severity}: {diag.Message} at {diag.Range.Start.Line}:{diag.Range.Start.Character}");
-			}
+			//foreach (var diag in diagnosticsParams.Diagnostics)
+			//{
+			//	GD.Print($"{diag.Source} {diag.Severity}: {diag.Message} at {diag.Range.Start.Line}:{diag.Range.Start.Character}");
+			//}
 		});
 
 		LanguageClient = await OmniSharp.Extensions.LanguageServer.Client.LanguageClient.From(options);

@@ -3,6 +3,7 @@ using DecompMeDesktop.Core.CodeEditor;
 using Godot;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,8 +46,9 @@ public partial class CppCodeEdit : CodeEdit
 	private int _docVersion = 1;
 	private CppHighlighter _cppHighlighter = new CppHighlighter();
 	private bool _ready = false;
-	private bool _autocompleteKeyPressed = false;
 	Vector2I _searchPos;
+	private bool _codeCompletionAccepted;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -105,8 +107,10 @@ public partial class CppCodeEdit : CodeEdit
 			};
 			SelectSearchResult(searchResult);
 		};
-	}
 
+		// this needs to be here or else AddCodeCompletionOption() doesn't work sometimes... don't ask me why
+		CodeCompletionPrefixes = [".", ">"];
+	}
 
 	private void SelectSearchResult(SearchResult searchResult)
 	{
@@ -128,7 +132,6 @@ public partial class CppCodeEdit : CodeEdit
 			return null;
 		}
 
-		GD.Print($"found {searchText} at line {result.Y} column {result.X}");
 		if (result.X - searchText.Length >= 0)
 		{
 			_searchPos = new Vector2I(result.X - searchText.Length, result.Y);
@@ -162,7 +165,6 @@ public partial class CppCodeEdit : CodeEdit
 			return null;
 		}
 
-		GD.Print($"found {searchText} at line {result.Y} column {result.X}");
 		if (result.X < result.X + searchText.Length)
 		{
 			_searchPos = new Vector2I(result.X + searchText.Length, result.Y);
@@ -218,18 +220,45 @@ public partial class CppCodeEdit : CodeEdit
 			})});
 	}
 
-	private async void OnLinesEditedFrom(long fromLine, long toLine)
+	private static bool ShouldPrefixTriggerAutocomplete(char prefix)
+	{
+		return (char.IsLetterOrDigit(prefix) || prefix == '.' || prefix == '>' || prefix == '_') && prefix != ' ';
+	}
+
+	private void OnLinesEditedFrom(long fromLine, long toLine)
 	{
 		DidChangeTextDocument();
 		UpdateSyntaxHighlighting();
 
-		if (!_autocompleteKeyPressed || !_ready)
+		if (!_ready)
 		{
 			return;
 		}
 
+		GD.Print("on lines edited from");
+		if (_codeCompletionAccepted)
+		{
+			_codeCompletionAccepted = false;
+			return;
+		}
+
+		var line = GetLine(GetCaretLine());
+		if (GetCaretColumn() < line.Length)
+		{
+			char typedChar = line[GetCaretColumn()];
+			if (!ShouldPrefixTriggerAutocomplete(typedChar))
+			{
+				return;
+			}
+		}
+
+		CallDeferred(MethodName.PopulateAutocompletion);
+	}
+
+	private void PopulateAutocompletion()
+	{
 		var line = _codeType == CodeType.Source ? GetCaretLine() + 1 : GetCaretLine();
-		var column = GetCaretColumn() + 1;
+		var column = GetCaretColumn();
 
 		_completeToken?.Cancel();
 		_completeToken?.Dispose();
@@ -249,29 +278,28 @@ public partial class CppCodeEdit : CodeEdit
 			{
 				if (item.Kind == CompletionItemKind.Method || item.Kind == CompletionItemKind.Function)
 				{
-					AddCodeCompletionOption(CodeCompletionKind.Function, item.Label, item.InsertText, null, ResourceLoader.Load("uid://d0pdc43hxgxlc"));
+					AddCodeCompletionOption(CodeCompletionKind.Function, item.Label, item.InsertText, ColorTheme.Function, ResourceLoader.Load("uid://d0pdc43hxgxlc"));
 				}
 				else if (item.Kind == CompletionItemKind.Field || item.Kind == CompletionItemKind.Property)
 				{
-					AddCodeCompletionOption(CodeCompletionKind.Member, item.Label, item.InsertText, null, ResourceLoader.Load("uid://bsek7qnira33g"));
+					AddCodeCompletionOption(CodeCompletionKind.Member, item.Label, item.InsertText, ColorTheme.Default, ResourceLoader.Load("uid://bsek7qnira33g"));
 				}
-				else if (item.Kind == CompletionItemKind.TypeParameter || item.Kind == CompletionItemKind.Variable)
+				else if (item.Kind == CompletionItemKind.TypeParameter)
+				{
+					AddCodeCompletionOption(CodeCompletionKind.Variable, item.Label, item.InsertText, ColorTheme.Parameter, ResourceLoader.Load("uid://bkomvyb0gmooc"));
+				}
+				else if (item.Kind == CompletionItemKind.Variable)
 				{
 					AddCodeCompletionOption(CodeCompletionKind.Variable, item.Label, item.InsertText, null, ResourceLoader.Load("uid://bkomvyb0gmooc"));
 				}
 				else if (item.Kind == CompletionItemKind.Class || item.Kind == CompletionItemKind.Struct)
 				{
-					AddCodeCompletionOption(CodeCompletionKind.Class, item.Label, item.InsertText, null, ResourceLoader.Load("uid://d0pdc43hxgxlc"));
+					AddCodeCompletionOption(CodeCompletionKind.Class, item.Label, item.InsertText, ColorTheme.Class, ResourceLoader.Load("uid://d0pdc43hxgxlc"));
 				}
 				else if (item.Kind == CompletionItemKind.Enum)
 				{
-					AddCodeCompletionOption(CodeCompletionKind.Enum, item.Label, item.InsertText, null, ResourceLoader.Load("uid://ccyhcr7dpcvom"));
+					AddCodeCompletionOption(CodeCompletionKind.Enum, item.Label, item.InsertText, ColorTheme.Enum, ResourceLoader.Load("uid://ccyhcr7dpcvom"));
 				}
-				else
-				{
-					continue;
-				}
-				GD.Print(item.ToString());
 			}
 
 			UpdateCodeCompletionOptions(true);
@@ -320,41 +348,6 @@ public partial class CppCodeEdit : CodeEdit
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-	}
-
-	public override void _GuiInput(InputEvent @event)
-	{
-		if (Input.IsActionJustPressed("code_search"))
-		{
-			_searchBoxParent.Show();
-		}
-
-		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
-		{
-			char pressedKey = (char)keyEvent.Unicode;
-			GD.Print("pressed: " + pressedKey + " " + keyEvent.Unicode);
-			if (char.IsLetterOrDigit(pressedKey) ||
-				pressedKey == '.' || pressedKey == '>' || pressedKey == '_' || keyEvent.Keycode == Key.Shift)
-			{
-				_autocompleteKeyPressed = true;
-			}
-			else if (keyEvent.Keycode == Key.Down || keyEvent.Keycode == Key.Up ||
-					keyEvent.Keycode == Key.Enter || keyEvent.Keycode == Key.Tab)
-			{
-				_autocompleteKeyPressed = false;
-			}
-			else
-			{
-				GD.Print("cancel completion");
-				CancelCodeCompletion();
-				_autocompleteKeyPressed = false;
-			}
-		}
-	}
-
-	public override void _Input(InputEvent @event)
-	{
-
 	}
 
 	public bool RequestSave(string scratchDir)
