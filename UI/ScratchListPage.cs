@@ -122,6 +122,7 @@ public partial class ScratchListPage : Node
 				{
 					card.SetPresetName(presetRequest.Data.name);
 					_presetNameCache.Add(presetRequest.Data);
+					presetRequest.QueueFree();
 				};
 			}
 			else

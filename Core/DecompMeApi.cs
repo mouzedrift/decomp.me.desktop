@@ -18,6 +18,8 @@ public partial class DecompMeApi : Node
 	public User CurrentUser { get; private set; }
 	[Signal] public delegate void UserReadyEventHandler();
 
+	private JsonRequest<User> _userRequestNode;
+
 #nullable enable
 
 	public class LibraryItem
@@ -228,12 +230,13 @@ public partial class DecompMeApi : Node
 			QueueFreeAllRequests();
 		};
 
-		var userRequest = RequestUser();
-		userRequest.DataReceived += () =>
+		_userRequestNode = RequestUser();
+		_userRequestNode.DataReceived += () =>
 		{
-			CurrentUser = userRequest.Data;
+			CurrentUser = _userRequestNode.Data;
 			GD.Print($"Logged in as {CurrentUser.username}, anon={CurrentUser.is_anonymous}");
-			userRequest.QueueFree();
+			_userRequestNode.QueueFree();
+			_userRequestNode = null;
 			EmitSignal(SignalName.UserReady);
 		};
 	}
@@ -390,6 +393,11 @@ public partial class DecompMeApi : Node
 	{
 		foreach (var child in GetChildren())
 		{
+			if (_userRequestNode != null && child == _userRequestNode)
+			{
+				continue;
+			}
+
 			if (child is HttpRequest request)
 			{
 				request.CancelRequest();
