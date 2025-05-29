@@ -39,6 +39,7 @@ public partial class ScratchPage : Control
 	private Timer _recompileTimer;
 	private HttpRequest _forkRequest;
 	private ICompiler _currentCompiler;
+	private CheckButton _compileLocallyCheckButton;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -70,17 +71,26 @@ public partial class ScratchPage : Control
 		}
 	}
 
-	private void SaveCode()
+	private void SaveCode(bool saveToDisk = true)
 	{
-		if (_ctxCodeEdit.RequestSave(_scratchDir))
+		if (saveToDisk)
+		{
+			if (_ctxCodeEdit.RequestSave(_scratchDir))
+			{
+				_currentScratch.context = _ctxCodeEdit.Text;
+			}
+
+			if (_srcCodeEdit.RequestSave(_scratchDir))
+			{
+				_currentScratch.source_code = _srcCodeEdit.Text;
+			}
+		}
+		else
 		{
 			_currentScratch.context = _ctxCodeEdit.Text;
-		}
-
-		if (_srcCodeEdit.RequestSave(_scratchDir))
-		{
 			_currentScratch.source_code = _srcCodeEdit.Text;
 		}
+
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -96,7 +106,6 @@ public partial class ScratchPage : Control
 		}
 		else if (Input.IsActionJustPressed("code_compile"))
 		{
-			SaveCode();
 			await CompileAsync();
 		}
 	}
@@ -115,11 +124,11 @@ public partial class ScratchPage : Control
 			_deleteButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/DeleteButton");
 			_compileButton = GetNode<Button>("VBoxContainer/Header/HBoxContainer/CompileButton");
 			_recompileTimer = GetNode<Timer>("RecompileTimer");
+			_compileLocallyCheckButton = GetNode<CheckButton>("VBoxContainer/Header/HBoxContainer/CheckButton");
 
 			_originalScratch = Utils.DeepCopy(scratch);
 			_currentScratch = scratch;
 
-			_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
 
 			var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
 			_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
@@ -153,19 +162,12 @@ public partial class ScratchPage : Control
 			_saveButton.Pressed += SaveScratch;
 			_compileButton.Pressed += async () =>
 			{
-				SaveCode();
 				await CompileAsync();
 			};
 
 			_recompileTimer.Timeout += async () =>
 			{
-				if (_currentCompiler == null)
-				{
-					return;
-				}
-
 				GD.Print("auto recompile triggered");
-				SaveCode();
 				await CompileAsync();
 			};
 
@@ -179,9 +181,11 @@ public partial class ScratchPage : Control
 				DecompMeApi.Instance.DeleteScratch(_currentScratch);
 			};
 
+			_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
+			_compileLocallyCheckButton.ButtonPressed = _currentCompiler != null;
 			if (_currentCompiler == null)
 			{
-				Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!");
+				Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!\nFalling back to online compiler.");
 			}
 
 			_stopwatch.Start();
@@ -267,15 +271,39 @@ public partial class ScratchPage : Control
 		var codeFilePath = Path.Combine(_scratchDir, "src.c");
 		codeEntry.ExtractToFile(codeFilePath, true);
 
-		var json = await Globals.RunAsmDiffAsync(_currentScratch.name);
-		var diffs = Globals.ParseAsmDifferJson(json);
-
-		_asmDiffWindow.SetTargetText(diffs["base"]);
-		_asmDiffWindow.SetCurrentText(diffs["current"]);
-		_asmDiffWindow.SetScore(_currentScratch.score.Value, _currentScratch.max_score.Value);
+		await CompileAsync();
 	}
 
 	private async Task CompileAsync()
+	{
+		if (_compileLocallyCheckButton.ButtonPressed)
+		{
+			SaveCode(true);
+			await CompileLocallyAsync();
+		}
+		else
+		{
+			SaveCode(false);
+			CompileOnline();
+		}
+	}
+
+	private void CompileOnline()
+	{
+		var request = DecompMeApi.Instance.CompileScratch(_currentScratch);
+		request.DataReceived += () =>
+		{
+			var root = JsonDocument.Parse(request.Data.diff_output.ToString()).RootElement;
+			var diffs = Globals.ParseAsmDifferJson(root.ToString());
+			_asmDiffWindow.SetTargetText(diffs["base"]);
+			_asmDiffWindow.SetCurrentText(diffs["current"]);
+			_asmDiffWindow.SetScore(root.GetProperty("current_score").GetInt32(), root.GetProperty("max_score").GetInt32());
+			_compilerOutputPanel.SetCompilerOutput(request.Data.compiler_output);
+			request.QueueFree();
+		};
+	}
+
+	private async Task CompileLocallyAsync()
 	{
 		if (_currentCompiler == null)
 		{

@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -26,6 +25,12 @@ public partial class DecompMeApi : Node
 	}
 
 #nullable enable
+	public class CompileResult
+	{
+		public object diff_output { get; set; }
+		public string compiler_output { get; set; }
+		public bool success { get; set; }
+	}
 
 	public class SearchResult
 	{
@@ -398,16 +403,19 @@ public partial class DecompMeApi : Node
 		return httpRequest;
 	}
 
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
-	{
-	}
-
 	public HttpRequest RequestScratchZip(string slug)
 	{
 		var httpRequest = new HttpRequest();
 		AddChild(httpRequest);
 		httpRequest.Request($"{ApiUrl}/scratch/{slug}/export");
+		return httpRequest;
+	}
+
+	public JsonRequest<CompileResult> CompileScratch(ScratchListItem scratch)
+	{
+		var httpRequest = new JsonRequest<CompileResult>();
+		AddChild(httpRequest);
+		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/compile", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
 		return httpRequest;
 	}
 

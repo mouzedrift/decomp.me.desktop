@@ -99,6 +99,10 @@ mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
 text = "Compile"
 
+[node name="CheckButton" type="CheckButton" parent="VBoxContainer/Header/HBoxContainer"]
+layout_mode = 2
+text = "Compile locally"
+
 [node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
