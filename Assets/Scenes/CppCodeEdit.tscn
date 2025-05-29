@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://bpudcsy1w1nsi"]
 
 [ext_resource type="Script" uid="uid://dcus2binv2wq8" path="res://UI/CppCodeEdit.cs" id="1_agrdf"]
-[ext_resource type="FontFile" uid="uid://b8m841trm77ut" path="res://Assets/Resources/Font/NotoSansMono-Regular.ttf" id="1_f5hm3"]
+[ext_resource type="FontFile" uid="uid://dk1tafldrpupg" path="res://Assets/Resources/Font/JetBrainsMono-Regular.ttf" id="1_f5hm3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_88h40"]
 bg_color = Color(0.121569, 0.121569, 0.121569, 1)

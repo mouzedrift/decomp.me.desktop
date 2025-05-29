@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://ekekip1v37gd"]
 
 [ext_resource type="Script" uid="uid://dfis5a1wtcshp" path="res://UI/CompilerOutputPanel.cs" id="1_oprdf"]
-[ext_resource type="FontFile" uid="uid://b8m841trm77ut" path="res://Assets/Resources/Font/NotoSansMono-Regular.ttf" id="2_o38nv"]
+[ext_resource type="FontFile" uid="uid://dk1tafldrpupg" path="res://Assets/Resources/Font/JetBrainsMono-Regular.ttf" id="2_o38nv"]
 
 [node name="CompilerOutputPanel" type="TabContainer"]
 anchors_preset = 15
