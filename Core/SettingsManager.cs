@@ -45,6 +45,11 @@ public partial class SettingsManager : Node
 		SetValueOptional("Video", "window_screen", GetWindow().CurrentScreen);
 		SetValueOptional("Video", "max_fps", 0);
 
+		SetValueOptional("Editor", "auto_compile", true);
+		SetValueOptional("Editor", "auto_compile_delay_ms", 500);
+		SetValueOptional("Editor", "match_progress_bar", true);
+		SetValueOptional("Editor", "language_server", true);
+
 		GetTree().Root.ContentScaleFactor = _config.GetValue("General", "scale_factor").AsSingle();
 
 		ApplyVideoSettings();

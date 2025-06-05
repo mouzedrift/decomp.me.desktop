@@ -1,0 +1,59 @@
+[gd_scene load_steps=6 format=3 uid="uid://c1c24arbc2uxk"]
+
+[ext_resource type="Script" uid="uid://do2ejfw2m04i1" path="res://UI/MinMaxHSlider.cs" id="1_glbf0"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_43exx"]
+font_size = 14
+font_color = Color(0.933333, 0.933333, 0.941176, 1)
+outline_size = 1
+
+[sub_resource type="LabelSettings" id="LabelSettings_glbf0"]
+font_size = 14
+font_color = Color(0.694118, 0.686275, 0.721569, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_1vyxo"]
+font_size = 12
+font_color = Color(0.509804, 0.501961, 0.545098, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_1y7vt"]
+font_size = 12
+font_color = Color(0.509804, 0.501961, 0.545098, 1)
+
+[node name="MinMaxHSlider" type="VBoxContainer"]
+offset_right = 386.0
+offset_bottom = 44.0
+size_flags_horizontal = 3
+script = ExtResource("1_glbf0")
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 2
+text = "Title"
+label_settings = SubResource("LabelSettings_43exx")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="CurrentValueLabel" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(82, 0)
+layout_mode = 2
+text = "500ms"
+label_settings = SubResource("LabelSettings_glbf0")
+
+[node name="MinValueLabel" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+text = "100ms"
+label_settings = SubResource("LabelSettings_1vyxo")
+
+[node name="HSlider" type="HSlider" parent="HBoxContainer"]
+custom_minimum_size = Vector2(316, 0)
+layout_mode = 2
+min_value = 100.0
+max_value = 2000.0
+step = 50.0
+value = 500.0
+rounded = true
+
+[node name="MaxValueLabel" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+text = "2000ms"
+label_settings = SubResource("LabelSettings_1y7vt")

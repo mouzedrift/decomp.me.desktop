@@ -111,10 +111,9 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_default_cursor_shape = 2
-current_tab = 2
+current_tab = 0
 
 [node name="About" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/TabContainer"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -167,6 +166,7 @@ layout_mode = 2
 metadata/_tab_index = 1
 
 [node name="Source Code" type="Control" parent="VBoxContainer/HSplitContainer/TabContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
