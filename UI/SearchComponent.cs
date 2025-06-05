@@ -37,28 +37,24 @@ public partial class SearchComponent : LineEdit
 			}
 		};
 
-		_searchTimer.Timeout += () =>
+		_searchTimer.Timeout += async () =>
 		{
-			var request = DecompMeApi.Instance.RequestSearch(Text);
-			request.DataReceived += () =>
+			var result = await DecompMeApi.RequestSearchAsync(this, Text);
+			ClearAllItems();
+			if (result.Count > 0)
 			{
-				ClearAllItems();
-				if (request.Data.Count > 0)
-				{
-					PopulateSearchMenu(request.Data);
-				}
-				else
-				{
-					_popupMenu.AddItem("No search results");
-				}
+				PopulateSearchMenu(result);
+			}
+			else
+			{
+				_popupMenu.AddItem("No search results");
+			}
 
-				if (!_popupMenu.Visible)
-				{
-					_popupMenu.Show();
-				}
-				PositionSearchMenu();
-				request.QueueFree();
-			};
+			if (!_popupMenu.Visible)
+			{
+				_popupMenu.Show();
+			}
+			PositionSearchMenu();
 		};
 
 		_popupMenu.IndexPressed += OnIndexPressed;
@@ -160,20 +156,16 @@ public partial class SearchComponent : LineEdit
 		}
 	}
 
-	private void OnIndexPressed(long index)
+	private async void OnIndexPressed(long index)
 	{
 		if (_searchResults.TryGetValue((int)index, out SearchItem item))
 		{
 			if (item.Type == "scratch")
 			{
-				var request = DecompMeApi.Instance.RequestScratch(item.Data, ScratchRequestType.Slug);
-				request.DataReceived += () =>
-				{
-					var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-					scratchPage.Init(request.Data);
-					SceneManager.Instance.ChangeScene(scratchPage);
-					request.QueueFree();
-				};
+				var request = await DecompMeApi.RequestScratchAsync(this, item.Data, ScratchRequestType.Slug);
+				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
+				scratchPage.Init(request);
+				SceneManager.Instance.ChangeScene(scratchPage);
 			}
 			else
 			{

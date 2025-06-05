@@ -22,7 +22,6 @@ namespace DecompMeDesktop.UI;
 public partial class ScratchPage : Control
 {
 	private Stopwatch _stopwatch = new Stopwatch();
-	private HttpRequest _httpRequest;
 	private AsmDiffPanel _asmDiffWindow;
 	private DecompMeApi.ScratchListItem _originalScratch;
 	private DecompMeApi.ScratchListItem _currentScratch;
@@ -37,7 +36,6 @@ public partial class ScratchPage : Control
 	private Button _deleteButton;
 	private Button _compileButton;
 	private Timer _recompileTimer;
-	private HttpRequest _forkRequest;
 	private ICompiler _currentCompiler;
 	private CheckButton _compileLocallyCheckButton;
 
@@ -46,28 +44,24 @@ public partial class ScratchPage : Control
 	{
 	}
 
-	private void ForkCurrentScratch()
+	private async Task ForkCurrentScratchAsync()
 	{
-		var forkRequest = DecompMeApi.Instance.ForkScratch(_currentScratch);
-		forkRequest.DataReceived += () =>
-		{
-			DecompMeApi.Instance.ClaimScratch(forkRequest.Data);
-			_currentScratch = forkRequest.Data;
-			forkRequest.QueueFree();
-		};
+		var scratch = await DecompMeApi.ForkScratchAsync(this, _currentScratch);
+		await DecompMeApi.ClaimScratchAsync(this, scratch);
+		_currentScratch = scratch;
 	}
 
-	private void SaveScratch()
+	private async Task SaveScratchAsync()
 	{
 		SaveCode();
 
-		if (DecompMeApi.Instance.CurrentUser.id != _currentScratch.owner.id)
+		if (DecompMeApi.CurrentUser.id != _currentScratch.owner.id)
 		{
-			ForkCurrentScratch();
+			await ForkCurrentScratchAsync();
 		}
 		else
 		{
-			DecompMeApi.Instance.UpdateScratch(_currentScratch);
+			await DecompMeApi.UpdateScratchAsync(this, _currentScratch);
 		}
 	}
 
@@ -102,7 +96,7 @@ public partial class ScratchPage : Control
 	{
 		if (Input.IsActionJustPressed("scratch_save"))
 		{
-			SaveScratch();
+			SaveScratchAsync();
 		}
 		else if (Input.IsActionJustPressed("code_compile"))
 		{
@@ -112,7 +106,7 @@ public partial class ScratchPage : Control
 
 	public void Init(DecompMeApi.ScratchListItem scratch)
 	{
-		Ready += () =>
+		Ready += async () =>
 		{
 			_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
 			_ctxCodeEdit = GetNode<CppCodeEdit>("VBoxContainer/HSplitContainer/TabContainer/Context/CodeEdit");
@@ -148,18 +142,22 @@ public partial class ScratchPage : Control
 			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/CreatedRichTextLabel5").Text = $"Created: {scratch.GetCreationTime()}";
 			GetNode<RichTextLabel>("VBoxContainer/HSplitContainer/TabContainer/About/ModifiedRichTextLabel6").Text = $"Modified: {scratch.GetLastUpdatedTime()}";
 
-			_ctxCodeEdit.InitAsync(_scratchDir, scratch.context);
+			await _ctxCodeEdit.InitAsync(_scratchDir, scratch.context);
 			_ctxCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
 			};
-			_srcCodeEdit.InitAsync(_scratchDir, scratch.source_code);
+			await _srcCodeEdit.InitAsync(_scratchDir, scratch.source_code);
 			_srcCodeEdit.TextChanged += () =>
 			{
 				_recompileTimer.Start();
 			};
 
-			_saveButton.Pressed += SaveScratch;
+			_saveButton.Pressed += async () =>
+			{
+				await SaveScratchAsync();
+			};
+
 			_compileButton.Pressed += async () =>
 			{
 				await CompileAsync();
@@ -173,12 +171,12 @@ public partial class ScratchPage : Control
 
 			_forkButton.Pressed += () =>
 			{
-				ForkCurrentScratch();
+				ForkCurrentScratchAsync();
 			};
 
-			_deleteButton.Pressed += () =>
+			_deleteButton.Pressed += async () =>
 			{
-				DecompMeApi.Instance.DeleteScratch(_currentScratch);
+				await DecompMeApi.DeleteScratchAsync(this, _currentScratch);
 			};
 
 			_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
@@ -189,17 +187,15 @@ public partial class ScratchPage : Control
 			}
 
 			_stopwatch.Start();
-			_httpRequest = DecompMeApi.Instance.RequestScratchZip(scratch.slug);
-			_httpRequest.RequestCompleted += OnZipRequestCompleted;
+			var response = await DecompMeApi.RequestScratchZipAsync(this, scratch.slug);
+			await OnZipRequestCompleted((long)response.Result, response.ResponseCode, response.Headers, response.Body);
 		};
 	}
 
-	private async void OnZipRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
+	private async Task OnZipRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
 	{
 		_stopwatch.Stop();
 		GD.Print($"zip request + download took {_stopwatch.ElapsedMilliseconds}ms");
-		_httpRequest.QueueFree();
-		_httpRequest = null;
 
 		using var memoryStream = new MemoryStream(body);
 		using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
@@ -284,23 +280,19 @@ public partial class ScratchPage : Control
 		else
 		{
 			SaveCode(false);
-			CompileOnline();
+			await CompileOnline();
 		}
 	}
 
-	private void CompileOnline()
+	private async Task CompileOnline()
 	{
-		var request = DecompMeApi.Instance.CompileScratch(_currentScratch);
-		request.DataReceived += () =>
-		{
-			var root = JsonDocument.Parse(request.Data.diff_output.ToString()).RootElement;
-			var diffs = Globals.ParseAsmDifferJson(root.ToString());
-			_asmDiffWindow.SetTargetText(diffs["base"]);
-			_asmDiffWindow.SetCurrentText(diffs["current"]);
-			_asmDiffWindow.SetScore(root.GetProperty("current_score").GetInt32(), root.GetProperty("max_score").GetInt32());
-			_compilerOutputPanel.SetCompilerOutput(request.Data.compiler_output);
-			request.QueueFree();
-		};
+		var result = await DecompMeApi.CompileScratchAsync(this, _currentScratch);
+		var root = JsonDocument.Parse(result.diff_output.ToString()).RootElement;
+		var diffs = Globals.ParseAsmDifferJson(root.ToString());
+		_asmDiffWindow.SetTargetText(diffs["base"]);
+		_asmDiffWindow.SetCurrentText(diffs["current"]);
+		_asmDiffWindow.SetScore(root.GetProperty("current_score").GetInt32(), root.GetProperty("max_score").GetInt32());
+		_compilerOutputPanel.SetCompilerOutput(result.compiler_output);
 	}
 
 	private async Task CompileLocallyAsync()

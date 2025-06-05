@@ -1,9 +1,6 @@
 using Godot;
 using DecompMeDesktop.Core;
-using System;
-using System.Collections.Generic;
-using static DecompMeDesktop.Core.DecompMeApi;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node
@@ -20,13 +17,9 @@ public partial class ScratchListPage : Node
 	private VBoxContainer _yourScratchesHBox;
 
 	private DecompMeApi.ScratchList _latestScratchList;
-	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _scratchListRequest;
-	private DecompMeApi.JsonRequest<DecompMeApi.Stats> _statsRequest;
-	private DecompMeApi.JsonRequest<DecompMeApi.ScratchList> _yourScratchesRequest;
-	private List<DecompMeApi.PresetName> _presetNameCache = [];
 	
 	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
+	public override async void _Ready()
 	{
 		_scratchCardContainer = GetNode<VBoxContainer>("ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/ScratchCards");
 		_showMoreButton = GetNode<Button>("ScrollContainer/VBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer2/HBoxContainer2/ScratchCards/ShowMoreButton");
@@ -38,42 +31,29 @@ public partial class ScratchListPage : Node
 
 		_showMoreButton.Visible = false;
 
-		_scratchListRequest = DecompMeApi.Instance.RequestScratchList();
-		_scratchListRequest.DataReceived += () =>
+		var scratchList = await DecompMeApi.RequestScratchListAsync(this);
+		await PopulateScratchCardsAsync(scratchList);
+
+		var user = await DecompMeApi.RequestUserAsync(this);
+		DecompMeApi.CurrentUser = user;
+		GD.Print($"Logged in as {user.username}, anon={user.is_anonymous}");
+
+		if (DecompMeApi.CurrentUser != null)
 		{
-			PopulateScratchCards(_scratchListRequest.Data);
-			_scratchListRequest.QueueFree();
-			_scratchListRequest = null;
+			var userScratches = await DecompMeApi.RequestUserScratchesAsync(this, user);
+			PopulateYourScratches(userScratches);
+		}
+
+		await RequestStatsAsync();
+		_statsUpdateTimer.Timeout += async () =>
+		{
+			await RequestStatsAsync();
 		};
 
-		if (DecompMeApi.Instance.CurrentUser != null)
+		_showMoreButton.Pressed += async () =>
 		{
-			_yourScratchesRequest = DecompMeApi.Instance.RequestUserScratches(DecompMeApi.Instance.CurrentUser);
-			_yourScratchesRequest.DataReceived += () =>
-			{
-				PopulateYourScratches();
-				_yourScratchesRequest.QueueFree();
-				_yourScratchesRequest = null;
-			};
-		}
-		else
-		{
-			DecompMeApi.Instance.UserReady += () =>
-			{
-				_yourScratchesRequest = DecompMeApi.Instance.RequestUserScratches(DecompMeApi.Instance.CurrentUser);
-				_yourScratchesRequest.DataReceived += () =>
-				{
-					PopulateYourScratches();
-					_yourScratchesRequest.QueueFree();
-					_yourScratchesRequest = null;
-				};
-			};
-		}
-
-		RequestStats();
-		_statsUpdateTimer.Timeout += RequestStats;
-
-		_showMoreButton.Pressed += NextPage;
+			await NextPageAsync();
+		};
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -81,30 +61,26 @@ public partial class ScratchListPage : Node
 	{
 	}
 
-	private void PopulateYourScratches()
+	private void PopulateYourScratches(DecompMeApi.ScratchList scratches)
 	{
-		foreach (var scratch in _yourScratchesRequest.Data.results)
+		foreach (var scratch in scratches.results)
 		{
 			var yourScratchesItem = ResourceLoader.Load<PackedScene>("uid://ccu3o4odbtxox").Instantiate<YourScratchesTextItem>();
 			yourScratchesItem.SetFunctionName(scratch.name);
 			yourScratchesItem.SetMatchPercentage(Utils.GetMatchPercentage(scratch.score, scratch.max_score));
-			yourScratchesItem.LinkLabelPressed += ()  =>
+			yourScratchesItem.LinkLabelPressed += async ()  =>
 			{
 				var url = $"{DecompMeApi.ApiUrl}/scratch/{scratch.slug}";
-				var request = DecompMeApi.Instance.RequestScratch(url);
-				request.DataReceived += () =>
-				{
-					var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-					scratchPage.Init(request.Data);
-					SceneManager.Instance.ChangeScene(scratchPage);
-					request.QueueFree();
-				};
+				var result = await DecompMeApi.RequestScratchAsync(this, url);
+				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
+				scratchPage.Init(result);
+				SceneManager.Instance.ChangeScene(scratchPage);
 			};
 			_yourScratchesHBox.AddChild(yourScratchesItem);
 		}
 	}
 
-	private void PopulateScratchCards(DecompMeApi.ScratchList scratchList)
+	private async Task PopulateScratchCardsAsync(DecompMeApi.ScratchList scratchList)
 	{
 		foreach (var scratch in scratchList.results)
 		{
@@ -115,20 +91,15 @@ public partial class ScratchListPage : Node
 				// additionally clicking the name should bring you to the preset page
 				card.SetPresetName(scratch.compiler); 
 			}
-			else if (!_presetNameCache.Any(p => p.id == scratch.preset))
+			else if (GlobalCache.TryGetPresetName(scratch.preset.Value, out string presetName))
 			{
-				var presetRequest = DecompMeApi.Instance.RequestPresetName(scratch.preset.Value);
-				presetRequest.DataReceived += () =>
-				{
-					card.SetPresetName(presetRequest.Data.name);
-					_presetNameCache.Add(presetRequest.Data);
-					presetRequest.QueueFree();
-				};
+				card.SetPresetName(presetName);
 			}
 			else
 			{
-				var presetName = _presetNameCache.Where(p => p.id == scratch.preset).First().name;
-				card.SetPresetName(presetName);
+				var presetRequest = await DecompMeApi.RequestPresetNameAsync(this, scratch.preset.Value);
+				card.SetPresetName(presetRequest.name);
+				GlobalCache.AddPresetName(scratch.preset.Value, presetRequest.name);
 			}
 
 			card.SetPlatformImage(scratch.platform);
@@ -138,10 +109,10 @@ public partial class ScratchListPage : Node
 			card.SetMatchPercentage(Utils.GetMatchPercentage(scratch.score, scratch.max_score));
 
 			_scratchCardContainer.AddChild(card);
+			_scratchCardContainer.MoveChild(_showMoreButton, -1);
 		}
 
 		_showMoreButton.Visible = true;
-		_scratchCardContainer.MoveChild(_showMoreButton, -1);
 		_latestScratchList = scratchList;
 	}
 
@@ -152,31 +123,16 @@ public partial class ScratchListPage : Node
 		_asmCountLabel.Text = $"{stats.asm_count:N0} asm globs submitted";
 	}
 
-	private void NextPage()
+	private async Task NextPageAsync()
 	{
-		_scratchListRequest = DecompMeApi.Instance.RequestNextScratchList(_latestScratchList.next);
-		_scratchListRequest.DataReceived += () =>
-		{
-			PopulateScratchCards(_scratchListRequest.Data);
-			_scratchListRequest.QueueFree();
-			_scratchListRequest = null;
-		};
+		var scratchList = await DecompMeApi.RequestNextScratchListAsync(this, _latestScratchList.next);
+		await PopulateScratchCardsAsync(scratchList);
 	}
 
-	private void RequestStats()
+	private async Task RequestStatsAsync()
 	{
-		// the previous stats request still hasn't finished...
-		if (_statsRequest != null)
-		{
-			return;
-		}
-
-		_statsRequest = DecompMeApi.Instance.RequestStats();
-		_statsRequest.DataReceived += () =>
-		{
-			PopulateStats(_statsRequest.Data);
-			_statsRequest.QueueFree();
-			_statsRequest = null;
-		};
+		// TODO: check if a request is still going...
+		var stats = await DecompMeApi.RequestStatsAsync(this);
+		PopulateStats(stats);
 	}
 }

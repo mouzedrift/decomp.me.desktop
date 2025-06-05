@@ -36,17 +36,13 @@ public partial class ScratchCard : PanelContainer
 
 	public override void _Ready()
 	{
-		_functionNameLabel.Pressed += () =>
+		_functionNameLabel.Pressed += async () =>
 		{
 			var url = $"{DecompMeApi.ApiUrl}/scratch/{_scratchSlug}";
-			var request = DecompMeApi.Instance.RequestScratch(url);
-			request.DataReceived += () =>
-			{
-				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-				scratchPage.Init(request.Data);
-				SceneManager.Instance.ChangeScene(scratchPage);
-				request.QueueFree();
-			};
+			var scratch = await DecompMeApi.RequestScratchAsync(this, url);
+			var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
+			scratchPage.Init(scratch);
+			SceneManager.Instance.ChangeScene(scratchPage);
 		};
 	}
 

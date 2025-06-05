@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace DecompMeDesktop.Core;
 

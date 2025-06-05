@@ -1,23 +1,22 @@
+using DecompMeDesktop.Core.Network;
 using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DecompMeDesktop.Core;
 
-public partial class DecompMeApi : Node
+public static class DecompMeApi
 {
-	public static DecompMeApi Instance {  get; private set; }
 	public const string ApiUrl = "https://decomp.me/api";
 	public const int DefaultPageSize = 20;
 	public const int MaxPageSize = 100;
-	public const bool DebugRequests = false;
 
-	public User CurrentUser { get; private set; }
+	public static User CurrentUser { get; set; }
 	[Signal] public delegate void UserReadyEventHandler();
 
-	private JsonRequest<User> _userRequestNode;
 	public enum ScratchRequestType
 	{
 		Url,
@@ -178,91 +177,11 @@ public partial class DecompMeApi : Node
 		}
 	}
 
-	public partial class JsonRequest<T> : HttpRequest
-	{
-		public T Data { get; private set; }
-		[Signal] public delegate void DataReceivedEventHandler();
-
-		public override void _Ready()
-		{
-			RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
-			{
-				if (DebugRequests)
-				{
-					GD.Print($"HTTP result: {result} response code: {responseCode}");
-				}
-
-				bool isJson = false;
-				foreach (var header in headers)
-				{
-					if (header == "Content-Type: application/json")
-					{
-						isJson = true;
-						break;
-					}
-				}
-
-				if (!isJson)
-				{
-					GD.Print("JsonRequest content is not application/json");
-					GD.Print(body.GetStringFromUtf8());
-					QueueFree();
-					return;
-				}
-
-				string jsonStr = body.GetStringFromUtf8();
-				Data = JsonSerializer.Deserialize<T>(jsonStr);
-
-				SaveCookie(headers);
-
-				EmitSignal(SignalName.DataReceived);
-			};
-		}
-
-		public new Godot.Error Request(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
-		{
-			customHeaders = AddHeader(customHeaders, "Accept: application/json");
-			customHeaders = AddCookie(customHeaders);
-			var error = base.Request(url, customHeaders, method, requestData);
-			if (error != Error.Ok)
-			{
-				GD.PrintErr($"{method} {url} failed with error: {error}");
-			}
-
-			if (DebugRequests)
-			{
-				GD.Print($"{method} {url}");
-			}
-			return error;
-		}
-	}
-
-	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
-	{
-		Instance = this;
-
-		SceneManager.Instance.PreSceneChange += () =>
-		{
-			QueueFreeAllRequests();
-		};
-
-		_userRequestNode = RequestUser();
-		_userRequestNode.DataReceived += () =>
-		{
-			CurrentUser = _userRequestNode.Data;
-			GD.Print($"Logged in as {CurrentUser.username}, anon={CurrentUser.is_anonymous}");
-			_userRequestNode.QueueFree();
-			_userRequestNode = null;
-			EmitSignal(SignalName.UserReady);
-		};
-	}
-
-	public JsonRequest<ScratchList> RequestScratchList(string search = "", int pageSize = DefaultPageSize)
+	public static async Task<ScratchList> RequestScratchListAsync(Node parent, string search = "", int pageSize = DefaultPageSize)
 	{
 		VerifyPageSize(pageSize);
-		var httpRequest = new JsonRequest<ScratchList>();
-		AddChild(httpRequest);
+		var httpRequest = new JsonHttpRequest<ScratchList>();
+		parent.AddChild(httpRequest);
 
 		string requestStr = $"{ApiUrl}/scratch?";
 		requestStr += $"page_size={pageSize}&";
@@ -271,71 +190,63 @@ public partial class DecompMeApi : Node
 			requestStr += $"search={search}";
 		}
 
-		httpRequest.Request(requestStr);
-		return httpRequest;
+		return await httpRequest.RequestAsync(requestStr);
 	}
 
-	public JsonRequest<ScratchList> RequestNextScratchList(string url, int pageSize = DefaultPageSize)
+	public static async Task<ScratchList> RequestNextScratchListAsync(Node parent, string url, int pageSize = DefaultPageSize)
 	{
 		VerifyPageSize(pageSize);
-		var httpRequest = new JsonRequest<ScratchList>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{url}&page_size={pageSize}");
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<ScratchList>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{url}&page_size={pageSize}");
 	}
 
-	public JsonRequest<ScratchListItem> RequestScratch(string input, ScratchRequestType requestType = ScratchRequestType.Url)
+	public static async Task<ScratchListItem> RequestScratchAsync(Node parent, string input, ScratchRequestType requestType = ScratchRequestType.Url)
 	{
-		var httpRequest = new JsonRequest<ScratchListItem>();
-		AddChild(httpRequest);
+		var httpRequest = new JsonHttpRequest<ScratchListItem>();
+		parent.AddChild(httpRequest);
 		string url = requestType == ScratchRequestType.Url ? input : $"{ApiUrl}/scratch/{input}";
-		httpRequest.Request(url);
-		return httpRequest;
+		return await httpRequest.RequestAsync(url);
 	}
 
-	public JsonRequest<Stats> RequestStats()
+	public static async Task<Stats> RequestStatsAsync(Node parent)
 	{
-		var httpRequest = new JsonRequest<Stats>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/stats");
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<Stats>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/stats");
 	}
 
-	public JsonRequest<User> RequestUser()
+	public static async Task<User> RequestUserAsync(Node parent)
 	{
-		var httpRequest = new JsonRequest<User>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/user");
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<User>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/user");
 	}
 
-	public JsonRequest<ScratchList> RequestUserScratches(User user, int pageSize = DefaultPageSize)
+	public static async Task<ScratchList> RequestUserScratchesAsync(Node parent, User user, int pageSize = DefaultPageSize)
 	{
-		var httpRequest = new JsonRequest<ScratchList>();
-		AddChild(httpRequest);
-		
+		var httpRequest = new JsonHttpRequest<ScratchList>();
+		parent.AddChild(httpRequest);
+
 		if (!user.is_anonymous.GetValueOrDefault() && user.github_id != null)
 		{
-			httpRequest.Request($"{ApiUrl}/users/{user.username}/scratches?page_size={pageSize}&ordering=-creation_time");
+			return await httpRequest.RequestAsync($"{ApiUrl}/users/{user.username}/scratches?page_size={pageSize}&ordering=-creation_time");
 		}
 		else
 		{
-			httpRequest.Request($"{ApiUrl}/user/scratches?page_size={pageSize}&ordering=-creation_time");
+			return await httpRequest.RequestAsync($"{ApiUrl}/user/scratches?page_size={pageSize}&ordering=-creation_time");
 		}
-
-		return httpRequest;
 	}
 
-	public JsonRequest<ScratchListItem> ForkScratch(ScratchListItem scratch)
+	public static async Task<ScratchListItem> ForkScratchAsync(Node parent, ScratchListItem scratch)
 	{
-		var httpRequest = new JsonRequest<ScratchListItem>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/fork", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<ScratchListItem>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/fork", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
 	}
 
 	// returns the claimed scratch
-	public void ClaimScratch(ScratchListItem scratch)
+	public static async Task ClaimScratchAsync(Node parent, ScratchListItem scratch)
 	{
 		if (scratch.claim_token == null || scratch.slug == null)
 		{
@@ -343,54 +254,38 @@ public partial class DecompMeApi : Node
 			return;
 		}
 
-		var httpRequest = new HttpRequest();
-		AddChild(httpRequest);
+		var httpRequest = new ManagedHttpRequest();
+		parent.AddChild(httpRequest);
 		var claimJson = JsonSerializer.Serialize(new { token = scratch.claim_token });
-		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/claim", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Post, claimJson);
-		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
-		{
-			SaveCookie(headers);
-			httpRequest.QueueFree();
-		};
+		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/claim", null, HttpClient.Method.Post, claimJson);
 	}
 
-	public void DeleteScratch(ScratchListItem scratch)
+	public static async Task DeleteScratchAsync(Node parent, ScratchListItem scratch)
 	{
-		var httpRequest = new HttpRequest();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Delete);
-		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
-		{
-			SaveCookie(headers);
-			httpRequest.QueueFree();
-		};
+		var httpRequest = new ManagedHttpRequest();
+		parent.AddChild(httpRequest);
+		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}", null, HttpClient.Method.Delete);
 	}
 
-	public void UpdateScratch(ScratchListItem scratch)
+	public static async Task UpdateScratchAsync(Node parent, ScratchListItem scratch)
 	{
-		var httpRequest = new HttpRequest();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}", AddCookie(["Content-Type: application/json"]), HttpClient.Method.Patch, JsonSerializer.Serialize(scratch));
-		httpRequest.RequestCompleted += (long result, long responseCode, string[] headers, byte[] body) =>
-		{
-			SaveCookie(headers);
-			httpRequest.QueueFree();
-		};
+		var httpRequest = new ManagedHttpRequest();
+		parent.AddChild(httpRequest);
+		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}", null, HttpClient.Method.Patch, JsonSerializer.Serialize(scratch));
 	}
 
-	public JsonRequest<PresetName> RequestPresetName(int id)
+	public static async Task<PresetName> RequestPresetNameAsync(Node parent, int id)
 	{
-		var httpRequest = new JsonRequest<PresetName>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/preset/{id}/name");
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<PresetName>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/preset/{id}/name");
 	}
 
-	public JsonRequest<List<SearchResult>> RequestSearch(string search, int pageSize = 5)
+	public static async Task<List<SearchResult>> RequestSearchAsync(Node parent, string search, int pageSize = 5)
 	{
 		VerifyPageSize(pageSize);
-		var httpRequest = new JsonRequest<List<SearchResult>>();
-		AddChild(httpRequest);
+		var httpRequest = new JsonHttpRequest<List<SearchResult>>();
+		parent.AddChild(httpRequest);
 
 		string requestStr = $"{ApiUrl}/search?";
 		requestStr += $"search={search}";
@@ -399,24 +294,21 @@ public partial class DecompMeApi : Node
 			requestStr += $"&page_size={pageSize}";
 		}
 
-		httpRequest.Request(requestStr);
-		return httpRequest;
+		return await httpRequest.RequestAsync(requestStr);
 	}
 
-	public HttpRequest RequestScratchZip(string slug)
+	public static async Task<ManagedHttpRequest.HttpResponse> RequestScratchZipAsync(Node parent, string slug)
 	{
-		var httpRequest = new HttpRequest();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/scratch/{slug}/export");
-		return httpRequest;
+		var httpRequest = new ManagedHttpRequest();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{slug}/export");
 	}
 
-	public JsonRequest<CompileResult> CompileScratch(ScratchListItem scratch)
+	public static async Task<CompileResult> CompileScratchAsync(Node parent, ScratchListItem scratch)
 	{
-		var httpRequest = new JsonRequest<CompileResult>();
-		AddChild(httpRequest);
-		httpRequest.Request($"{ApiUrl}/scratch/{scratch.slug}/compile", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
-		return httpRequest;
+		var httpRequest = new JsonHttpRequest<CompileResult>();
+		parent.AddChild(httpRequest);
+		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/compile", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
 	}
 
 	private static void VerifyPageSize(int pageSize)
@@ -424,23 +316,6 @@ public partial class DecompMeApi : Node
 		if (pageSize > MaxPageSize)
 		{
 			GD.PushWarning($"Page size cannot be larger than {MaxPageSize}");
-		}
-	}
-
-	private void QueueFreeAllRequests()
-	{
-		foreach (var child in GetChildren())
-		{
-			if (_userRequestNode != null && child == _userRequestNode)
-			{
-				continue;
-			}
-
-			if (child is HttpRequest request)
-			{
-				request.CancelRequest();
-				request.QueueFree();
-			}
 		}
 	}
 }
