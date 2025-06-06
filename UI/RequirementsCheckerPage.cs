@@ -13,7 +13,6 @@ namespace DecompMeDesktop.UI;
 public partial class RequirementsCheckerPage : Control
 {
 	private readonly PackedScene TaskProgressbar = ResourceLoader.Load<PackedScene>("uid://coqxme8u46wvb");
-	private readonly PackedScene ScratchListPage = ResourceLoader.Load<PackedScene>("uid://dgrhdqs4p8wr3");
 
 	private VBoxContainer _taskList;
 	private Button _okButton;
@@ -37,12 +36,12 @@ public partial class RequirementsCheckerPage : Control
 
 		_okButton.Pressed += () =>
 		{
-			SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+			SceneManager.GotoHomepage();
 		};
 
 		if (SettingsManager.Instance.GetValue("Setup", "dependencies_installed").AsBool())
 		{
-			SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+			SceneManager.GotoHomepage();
 			return;
 		}
 

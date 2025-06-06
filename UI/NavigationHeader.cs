@@ -10,7 +10,6 @@ public partial class NavigationHeader : Node
 	private Button _settingsButton;
 	private Button _userButton;
 
-	private readonly PackedScene SettingsPage = ResourceLoader.Load<PackedScene>("uid://dq8qy1aik7870");
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -24,7 +23,7 @@ public partial class NavigationHeader : Node
 
 		};
 
-		_settingsButton.Pressed += () => SceneManager.Instance.ChangeScene(SettingsPage.Instantiate());
+		_settingsButton.Pressed += SceneManager.GotoSettings;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

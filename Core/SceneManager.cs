@@ -1,9 +1,14 @@
+using DecompMeDesktop.UI;
 using Godot;
 
 namespace DecompMeDesktop.Core;
 
 public partial class SceneManager : Node
 {
+	private static readonly PackedScene ScratchListPage = ResourceLoader.Load<PackedScene>("uid://dgrhdqs4p8wr3");
+	private static readonly PackedScene SettingsPage = ResourceLoader.Load<PackedScene>("uid://dq8qy1aik7870");
+	private static readonly PackedScene ScratchPage = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
+
 	public static SceneManager Instance { get; private set; }
 	[Signal] public delegate void PostSceneChangeEventHandler();
 	[Signal] public delegate void PreSceneChangeEventHandler();
@@ -35,5 +40,22 @@ public partial class SceneManager : Node
 
 		_nextScene = null;
 		EmitSignal(SignalName.PostSceneChange);
+	}
+
+	public static void GotoHomepage()
+	{
+		Instance.ChangeScene(ScratchListPage.Instantiate());
+	}
+
+	public static void GotoSettings()
+	{
+		Instance.ChangeScene(SettingsPage.Instantiate());
+	}
+
+	public static void GotoScratchPage(DecompMeApi.ScratchListItem scratch)
+	{
+		var scratchPage = ScratchPage.Instantiate<ScratchPage>();
+		scratchPage.Init(scratch);
+		Instance.ChangeScene(scratchPage);
 	}
 }

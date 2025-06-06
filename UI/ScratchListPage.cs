@@ -7,7 +7,6 @@ namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node
 {
 	private readonly PackedScene SCRATCH_CARD = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchCard.tscn");
-	private readonly PackedScene SCRATCH_PAGE = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
 
 	private VBoxContainer _scratchCardContainer;
 	private Button _showMoreButton;
@@ -77,9 +76,7 @@ public partial class ScratchListPage : Node
 			{
 				var url = $"{DecompMeApi.ApiUrl}/scratch/{scratch.slug}";
 				var result = await DecompMeApi.RequestScratchAsync(this, url);
-				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-				scratchPage.Init(result);
-				SceneManager.Instance.ChangeScene(scratchPage);
+				SceneManager.GotoScratchPage(result);
 			};
 			_yourScratchesHBox.AddChild(yourScratchesItem);
 		}

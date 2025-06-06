@@ -6,7 +6,6 @@ namespace DecompMeDesktop.UI;
 
 public partial class HomeButton : HBoxContainer
 {
-	private readonly PackedScene ScratchListPage = ResourceLoader.Load<PackedScene>("uid://dgrhdqs4p8wr3");
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -23,7 +22,7 @@ public partial class HomeButton : HBoxContainer
 		{
 			if (mb.ButtonIndex == MouseButton.Left && mb.Pressed)
 			{
-				SceneManager.Instance.ChangeScene(ScratchListPage.Instantiate());
+				SceneManager.GotoHomepage();
 			}
 		}
 	}

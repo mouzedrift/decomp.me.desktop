@@ -1,21 +1,12 @@
 using DecompMeDesktop.Core;
 using DecompMeDesktop.Core.Compilers;
 using Godot;
-using Nerdbank.Streams;
-using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
-using static DecompMeDesktop.Core.DecompMeApi;
-using static System.Net.Mime.MediaTypeNames;
-using Environment = System.Environment;
 
 namespace DecompMeDesktop.UI;
 
@@ -52,18 +43,32 @@ public partial class ScratchPage : Control
 		await loadingWindow.ExecuteAsync(this, "Forking scratch...", async () =>
 		{
 			_currentScratch = await DecompMeApi.ForkScratchAsync(this, _currentScratch);
-			
-			string claimFilePath = ProjectSettings.GlobalizePath("user://claims.txt");
-			File.AppendAllText(claimFilePath, $"https://decomp.me/scratch/{_currentScratch.slug}/claim?token={_currentScratch.claim_token}\n");
 		});
 
 		await loadingWindow.ExecuteAsync(this, "Claiming scratch...", async () =>
 		{
-			GD.Print($"claim token is: {_currentScratch.claim_token}");
-			_currentScratch = await DecompMeApi.ClaimScratchAsync(this, _currentScratch);
+			bool claimFailed = true;
+			for (int i = 0; i < 3; i++)
+			{
+				var result = await DecompMeApi.ClaimScratchAsync(this, _currentScratch);
+				if (result.success)
+				{
+					claimFailed = false;
+					_currentScratch.owner = DecompMeApi.CurrentUser;
+					break;
+				}
+			}
+
+			if (claimFailed)
+			{
+				string claimFilePath = ProjectSettings.GlobalizePath("user://failed_claims.txt");
+				File.AppendAllText(claimFilePath, $"https://decomp.me/scratch/{_currentScratch.slug}/claim?token={_currentScratch.claim_token}\n");
+			}
 		});
 
 		loadingWindow.QueueFree();
+
+		SceneManager.GotoScratchPage(_currentScratch);
 	}
 
 	private async Task SaveScratchAsync()
@@ -138,8 +143,6 @@ public partial class ScratchPage : Control
 			_recompileTimer = GetNode<Timer>("RecompileTimer");
 			_compileLocallyCheckButton = GetNode<CheckButton>("VBoxContainer/Header/HBoxContainer/CheckButton");
 
-			GD.Print("scratch page ready");
-			
 			var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
 			_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
 			Directory.CreateDirectory(_scratchDir);
@@ -190,9 +193,14 @@ public partial class ScratchPage : Control
 				await ForkCurrentScratchAsync();
 			};
 
-			_deleteButton.Pressed += async () =>
+			_deleteButton.Pressed += () =>
 			{
-				await DecompMeApi.DeleteScratchAsync(this, _currentScratch);
+				var dialog = Utils.CreateConfirmationDialog(this, "Are you sure you want to delete this scratch? This action cannot be undone.");
+				dialog.Confirmed += async () =>
+				{
+					await DecompMeApi.DeleteScratchAsync(this, _currentScratch);
+					SceneManager.GotoHomepage();
+				};
 			};
 
 			_currentCompiler = Compilers.GetCompiler(_currentScratch.compiler);
@@ -201,6 +209,8 @@ public partial class ScratchPage : Control
 			{
 				Utils.CreateAcceptDialog(this, $"Compiler {_currentScratch.compiler} is not installed!\nFalling back to online compiler.");
 			}
+
+			UpdateButtons();
 
 			_stopwatch.Start();
 			var response = await DecompMeApi.RequestScratchZipAsync(this, scratch.slug);
@@ -372,5 +382,12 @@ public partial class ScratchPage : Control
 		_compilerOutputPanel.SetCompilerOutput(stdout);
 		_compilerRunning = false;
 		process.Dispose();
+	}
+
+	private void UpdateButtons()
+	{
+		bool scratchBelongsToMe = _currentScratch.owner != null && _currentScratch.owner.id == DecompMeApi.CurrentUser.id;
+		_deleteButton.Visible = scratchBelongsToMe;
+		_saveButton.Disabled = !scratchBelongsToMe;
 	}
 }

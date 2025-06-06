@@ -29,7 +29,6 @@ public partial class ScratchCard : PanelContainer
 		GetNode<Label>("MarginContainer/VBoxContainer/HBoxContainer2/TimestampLabel").Text = Utils.FormatRelativeTime(timeSpan);
 	}
 
-	private readonly PackedScene SCRATCH_PAGE = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
 	private string _scratchSlug;
 
 	// Called when the node enters the scene tree for the first time.
@@ -40,9 +39,7 @@ public partial class ScratchCard : PanelContainer
 		{
 			var url = $"{DecompMeApi.ApiUrl}/scratch/{_scratchSlug}";
 			var scratch = await DecompMeApi.RequestScratchAsync(this, url);
-			var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-			scratchPage.Init(scratch);
-			SceneManager.Instance.ChangeScene(scratchPage);
+			SceneManager.GotoScratchPage(scratch);
 		};
 	}
 

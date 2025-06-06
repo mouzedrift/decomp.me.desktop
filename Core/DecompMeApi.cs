@@ -24,6 +24,12 @@ public static class DecompMeApi
 	}
 
 #nullable enable
+
+	public class ClaimResult
+	{
+		public bool success { get; set; }
+	}
+
 	public class CompileResult
 	{
 		public object diff_output { get; set; }
@@ -245,8 +251,7 @@ public static class DecompMeApi
 		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/fork", null, HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
 	}
 
-	// returns the claimed scratch
-	public static async Task<ScratchListItem> ClaimScratchAsync(Node parent, ScratchListItem scratch)
+	public static async Task<ClaimResult> ClaimScratchAsync(Node parent, ScratchListItem scratch)
 	{
 		if (scratch.claim_token == null || scratch.slug == null)
 		{
@@ -254,7 +259,7 @@ public static class DecompMeApi
 			return null;
 		}
 
-		var httpRequest = new JsonHttpRequest<ScratchListItem>();
+		var httpRequest = new JsonHttpRequest<ClaimResult>();
 		parent.AddChild(httpRequest);
 		var claimJson = JsonSerializer.Serialize(new { token = scratch.claim_token });
 		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/claim", null, HttpClient.Method.Post, claimJson);

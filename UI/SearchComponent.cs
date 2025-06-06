@@ -16,8 +16,6 @@ public partial class SearchComponent : LineEdit
 		public string Data { get; set; } = data;
 	}
 
-	private readonly PackedScene SCRATCH_PAGE = ResourceLoader.Load<PackedScene>("res://Assets/Scenes/ScratchPage.tscn");
-
 	private PopupMenu _popupMenu;
 	private Timer _searchTimer;
 	private Dictionary<int, SearchItem> _searchResults = [];
@@ -162,10 +160,8 @@ public partial class SearchComponent : LineEdit
 		{
 			if (item.Type == "scratch")
 			{
-				var request = await DecompMeApi.RequestScratchAsync(this, item.Data, ScratchRequestType.Slug);
-				var scratchPage = SCRATCH_PAGE.Instantiate<ScratchPage>();
-				scratchPage.Init(request);
-				SceneManager.Instance.ChangeScene(scratchPage);
+				var scratch = await DecompMeApi.RequestScratchAsync(this, item.Data, ScratchRequestType.Slug);
+				SceneManager.GotoScratchPage(scratch);
 			}
 			else
 			{
