@@ -70,8 +70,6 @@ public partial class ManagedHttpRequest : HttpRequest
 
 	public async Task<HttpResponse> RequestAsync(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
 	{
-		//GetTree().Root.AddChild(this);
-
 		var tcs = new TaskCompletionSource<HttpResponse>();
 
 		void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
@@ -115,6 +113,11 @@ public partial class JsonHttpRequest<T> : ManagedHttpRequest
 	public new async Task<T> RequestAsync(string url, string[] customHeaders = null, HttpClient.Method method = HttpClient.Method.Get, string requestData = "")
 	{
 		customHeaders = AddHeader(customHeaders, "Accept: application/json");
+		if (method == HttpClient.Method.Post || method == HttpClient.Method.Patch)
+		{
+			customHeaders = AddHeader(customHeaders, "Content-Type: application/json");
+		}
+
 		var result = await base.RequestAsync(url, customHeaders, method, requestData);
 
 		bool isJson = false;

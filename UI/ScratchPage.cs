@@ -46,9 +46,24 @@ public partial class ScratchPage : Control
 
 	private async Task ForkCurrentScratchAsync()
 	{
-		var scratch = await DecompMeApi.ForkScratchAsync(this, _currentScratch);
-		await DecompMeApi.ClaimScratchAsync(this, scratch);
-		_currentScratch = scratch;
+		var loadingWindow = Utils.CreateLoadingWindow(this);
+		loadingWindow.Show();
+
+		await loadingWindow.ExecuteAsync(this, "Forking scratch...", async () =>
+		{
+			_currentScratch = await DecompMeApi.ForkScratchAsync(this, _currentScratch);
+			
+			string claimFilePath = ProjectSettings.GlobalizePath("user://claims.txt");
+			File.AppendAllText(claimFilePath, $"https://decomp.me/scratch/{_currentScratch.slug}/claim?token={_currentScratch.claim_token}\n");
+		});
+
+		await loadingWindow.ExecuteAsync(this, "Claiming scratch...", async () =>
+		{
+			GD.Print($"claim token is: {_currentScratch.claim_token}");
+			_currentScratch = await DecompMeApi.ClaimScratchAsync(this, _currentScratch);
+		});
+
+		loadingWindow.QueueFree();
 	}
 
 	private async Task SaveScratchAsync()
@@ -96,7 +111,7 @@ public partial class ScratchPage : Control
 	{
 		if (Input.IsActionJustPressed("scratch_save"))
 		{
-			SaveScratchAsync();
+			await SaveScratchAsync();
 		}
 		else if (Input.IsActionJustPressed("code_compile"))
 		{
@@ -106,6 +121,9 @@ public partial class ScratchPage : Control
 
 	public void Init(DecompMeApi.ScratchListItem scratch)
 	{
+		_originalScratch = Utils.DeepCopy(scratch);
+		_currentScratch = scratch;
+
 		Ready += async () =>
 		{
 			_asmDiffWindow = GetNode<AsmDiffPanel>("VBoxContainer/HSplitContainer/HBoxContainer/VSplitContainer/AsmDiffWindow");
@@ -120,10 +138,8 @@ public partial class ScratchPage : Control
 			_recompileTimer = GetNode<Timer>("RecompileTimer");
 			_compileLocallyCheckButton = GetNode<CheckButton>("VBoxContainer/Header/HBoxContainer/CheckButton");
 
-			_originalScratch = Utils.DeepCopy(scratch);
-			_currentScratch = scratch;
-
-
+			GD.Print("scratch page ready");
+			
 			var localScratchDir = AppDirs.Scratches.PathJoin(scratch.slug);
 			_scratchDir = ProjectSettings.GlobalizePath(localScratchDir);
 			Directory.CreateDirectory(_scratchDir);
@@ -169,9 +185,9 @@ public partial class ScratchPage : Control
 				await CompileAsync();
 			};
 
-			_forkButton.Pressed += () =>
+			_forkButton.Pressed += async () =>
 			{
-				ForkCurrentScratchAsync();
+				await ForkCurrentScratchAsync();
 			};
 
 			_deleteButton.Pressed += async () =>
@@ -238,14 +254,14 @@ public partial class ScratchPage : Control
 		if (asmTargetAvailable)
 		{
 			using var asmTargetReader = new StreamReader(asmTarget.Open());
-			string targetAsm = asmTargetReader.ReadToEnd();
+			string targetAsm = await asmTargetReader.ReadToEndAsync();
 			File.WriteAllText(_scratchDir.PathJoin("target.s"), targetAsm);
 		}
 
 		using var objCurrentMs = new MemoryStream();
 		using var objTargetMs = new MemoryStream();
-		currentObjEntry.Open().CopyTo(objCurrentMs);
-		targetObjEntry.Open().CopyTo(objTargetMs);
+		await currentObjEntry.Open().CopyToAsync(objCurrentMs);
+		await targetObjEntry.Open().CopyToAsync(objTargetMs);
 
 		File.WriteAllBytes(_scratchDir.PathJoin("target.o"), objTargetMs.ToArray());
 
@@ -280,11 +296,11 @@ public partial class ScratchPage : Control
 		else
 		{
 			SaveCode(false);
-			await CompileOnline();
+			await CompileOnlineAsync();
 		}
 	}
 
-	private async Task CompileOnline()
+	private async Task CompileOnlineAsync()
 	{
 		var result = await DecompMeApi.CompileScratchAsync(this, _currentScratch);
 		var root = JsonDocument.Parse(result.diff_output.ToString()).RootElement;

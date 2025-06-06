@@ -1,6 +1,7 @@
 using Godot;
 using DecompMeDesktop.Core;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace DecompMeDesktop.UI;
 public partial class ScratchListPage : Node
@@ -31,16 +32,20 @@ public partial class ScratchListPage : Node
 
 		_showMoreButton.Visible = false;
 
+		if (DecompMeApi.CurrentUser == null)
+		{
+			var user = await DecompMeApi.RequestUserAsync(this);
+			DecompMeApi.CurrentUser = user;
+		}
+
+		GD.Print($"Logged in as {DecompMeApi.CurrentUser.username}, anon={DecompMeApi.CurrentUser.is_anonymous}");
+		GD.Print(JsonSerializer.Serialize(DecompMeApi.CurrentUser));
 		var scratchList = await DecompMeApi.RequestScratchListAsync(this);
 		await PopulateScratchCardsAsync(scratchList);
 
-		var user = await DecompMeApi.RequestUserAsync(this);
-		DecompMeApi.CurrentUser = user;
-		GD.Print($"Logged in as {user.username}, anon={user.is_anonymous}");
-
 		if (DecompMeApi.CurrentUser != null)
 		{
-			var userScratches = await DecompMeApi.RequestUserScratchesAsync(this, user);
+			var userScratches = await DecompMeApi.RequestUserScratchesAsync(this, DecompMeApi.CurrentUser);
 			PopulateYourScratches(userScratches);
 		}
 

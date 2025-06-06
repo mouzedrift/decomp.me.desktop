@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DecompMeDesktop.Core;
 
@@ -239,5 +240,12 @@ public class Utils
 			"win32" => ResourceLoader.Load<Texture2D>("uid://dkxy8fhnqwxnd"),
 			_ => ResourceLoader.Load<Texture2D>("uid://d2iapnf8j0gmd") // unknown icon
 		};
+	}
+
+	public static LoadingWindow CreateLoadingWindow(Node parent)
+	{
+		var loadingWindow = ResourceLoader.Load<PackedScene>("uid://bxcbmvfofmuod").Instantiate<LoadingWindow>();
+		parent.AddChild(loadingWindow);
+		return loadingWindow;
 	}
 }

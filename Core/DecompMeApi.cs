@@ -242,22 +242,22 @@ public static class DecompMeApi
 	{
 		var httpRequest = new JsonHttpRequest<ScratchListItem>();
 		parent.AddChild(httpRequest);
-		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/fork", ["Content-Type: application/json"], HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
+		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/fork", null, HttpClient.Method.Post, JsonSerializer.Serialize(scratch));
 	}
 
 	// returns the claimed scratch
-	public static async Task ClaimScratchAsync(Node parent, ScratchListItem scratch)
+	public static async Task<ScratchListItem> ClaimScratchAsync(Node parent, ScratchListItem scratch)
 	{
 		if (scratch.claim_token == null || scratch.slug == null)
 		{
 			GD.PrintErr("Cannot claim scratch!");
-			return;
+			return null;
 		}
 
-		var httpRequest = new ManagedHttpRequest();
+		var httpRequest = new JsonHttpRequest<ScratchListItem>();
 		parent.AddChild(httpRequest);
 		var claimJson = JsonSerializer.Serialize(new { token = scratch.claim_token });
-		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/claim", null, HttpClient.Method.Post, claimJson);
+		return await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}/claim", null, HttpClient.Method.Post, claimJson);
 	}
 
 	public static async Task DeleteScratchAsync(Node parent, ScratchListItem scratch)
@@ -271,7 +271,7 @@ public static class DecompMeApi
 	{
 		var httpRequest = new ManagedHttpRequest();
 		parent.AddChild(httpRequest);
-		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}", null, HttpClient.Method.Patch, JsonSerializer.Serialize(scratch));
+		await httpRequest.RequestAsync($"{ApiUrl}/scratch/{scratch.slug}", ["Content-Type: application/json"], HttpClient.Method.Patch, JsonSerializer.Serialize(scratch));
 	}
 
 	public static async Task<PresetName> RequestPresetNameAsync(Node parent, int id)
