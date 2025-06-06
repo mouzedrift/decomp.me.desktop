@@ -101,6 +101,7 @@ text = "Compile"
 
 [node name="CheckButton" type="CheckButton" parent="VBoxContainer/Header/HBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 text = "Compile locally"
 
 [node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer"]

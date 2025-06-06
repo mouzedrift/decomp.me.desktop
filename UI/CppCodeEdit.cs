@@ -85,10 +85,13 @@ public partial class CppCodeEdit : CodeEdit
 			{
 				var oldLineStr = GetLine(result.Line);
 				var newLineStr = oldLineStr.Remove(result.ColumnStart, result.ColumnEnd - result.ColumnStart).Insert(result.ColumnStart, _replaceLineEdit.Text);
+
+				_searchPos = new Vector2I(result.ColumnStart + _replaceLineEdit.Text.Length, result.Line);
 				SetLine(result.Line, newLineStr);
 			}
 		};
 
+		_searchLineEdit.TextSubmitted += (string text) => SearchNext();
 		_searchLineEdit.TextChanged += (string text) =>
 		{
 			var searchText = _searchLineEdit.Text;
@@ -147,6 +150,7 @@ public partial class CppCodeEdit : CodeEdit
 		if (Input.IsActionJustPressed("code_search"))
 		{
 			_searchBoxParent.Show();
+			_searchLineEdit.GrabFocus();
 		}
 	}
 
@@ -198,7 +202,7 @@ public partial class CppCodeEdit : CodeEdit
 		}
 
 		var result = Search(searchText, GetSearchFlags(), _searchPos.Y, _searchPos.X);
-		if (result.X == -1 || result.Y == -11)
+		if (result.X == -1 || result.Y == -1)
 		{
 			return null;
 		}
