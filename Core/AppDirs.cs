@@ -9,6 +9,7 @@ public class AppDirs
 	public const string PythonVenv = "user://venv";
 	public const string Bin = "user://bin";
 	public const string Compilers = "user://compilers";
+	public const string Cache = "user://cache";
 
 	public static void CreateDirectories()
 	{
@@ -16,5 +17,6 @@ public class AppDirs
 		Directory.CreateDirectory(ProjectSettings.GlobalizePath(PythonVenv));
 		Directory.CreateDirectory(ProjectSettings.GlobalizePath(Bin));
 		Directory.CreateDirectory(ProjectSettings.GlobalizePath(Compilers));
+		Directory.CreateDirectory(ProjectSettings.GlobalizePath(Cache));
 	}
 };

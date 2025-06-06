@@ -27,10 +27,22 @@ public partial class Globals : Node
 		"binutils-mingw-w64-i686"
 	};
 
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest)
+		{
+			GlobalCache.SaveCache();
+		}
+	}
+
 	// Called when the node enters the scene tree for the first time.
 	public override async void _Ready()
 	{
 		Instance = this;
+
+		AppDirs.CreateDirectories();
+
+		GlobalCache.LoadCache();
 
 		var window = GetTree().Root.GetWindow();
 		var width = ProjectSettings.GetSetting("display/window/size/viewport_width").AsInt32();
@@ -41,8 +53,6 @@ public partial class Globals : Node
 		{
 			window.MinSize = minSize;
 		}
-
-		AppDirs.CreateDirectories();
 
 		Utils.CopyBinFiles();
 
